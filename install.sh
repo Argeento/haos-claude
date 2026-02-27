@@ -100,6 +100,13 @@ for file in "${FILES[@]}"; do
   printf '    - %s\n' "${skill_name}"
 done
 
-printf '\n'
-printf '  Run \033[1mclaude\033[0m to get started.\n'
+# ── Check if Claude Code is installed ──────────────────────
+if command -v claude >/dev/null 2>&1; then
+  printf '\n'
+  printf '  Run \033[1mclaude\033[0m to get started.\n'
+else
+  printf '\n'
+  warn "Claude Code is not installed."
+  printf '  Install it first: \033[4mhttps://code.claude.com/docs/en/setup#install-claude-code\033[0m\n'
+fi
 printf '\n'
