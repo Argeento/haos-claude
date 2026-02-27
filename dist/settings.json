@@ -22,7 +22,7 @@
       "Bash(du *)",
       "Bash(ping *)",
       "Bash(nslookup *)",
-      "Bash(curl *)"
+      "Bash(curl *:*)"
     ],
     "deny": [
       "Bash(ha os datadisk wipe*)",

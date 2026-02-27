@@ -5,8 +5,9 @@ You are inside the **SSH addon container** (Alpine Linux) on HAOS — NOT the ba
 ## Environment
 
 - **Container**: Alpine Linux, `root` (container root, not host root)
-- **Available**: `ha` CLI, `apk` (lost on restart), `/config`, `/share`, `/media`, `/backup`, `/ssl`
-- **NOT available**: `docker`, host filesystem, Buildroot
+- **Available**: `ha` CLI, `apk` (lost on restart), `jq`, `curl`, `cat`, `/config`, `/share`, `/media`, `/backup`, `/ssl`
+- **NOT available**: `python3`, `python`, `docker`, host filesystem, Buildroot
+- **Core REST API is NOT accessible** from the SSH addon (`$SUPERVISOR_TOKEN` works only with the Supervisor API at `http://supervisor/`). Do NOT attempt `curl http://supervisor/core/api/*` — it returns 401.
 
 ### Container → Host path mapping
 
@@ -50,6 +51,21 @@ HAOS runs Docker containers (Supervisor, Core on port 8123, DNS on 172.30.32.3, 
 ## Safe (no confirmation needed)
 
 All `ha` diagnostic commands (`ha info`, `ha core info`, `ha core logs`, `ha core check`, `ha resolution info`), browsing `/config/` files, network diagnostics (`ping`, `nslookup`, `curl`), reading logs, listing backups.
+
+## How to access HA data
+
+The SSH addon cannot call the Core REST API (401). Use these methods instead:
+
+- **Devices**: `cat /config/.storage/core.device_registry | jq`
+- **Entities**: `cat /config/.storage/core.entity_registry | jq`
+- **Areas**: `cat /config/.storage/core.area_registry | jq`
+- **Automations**: `cat /config/automations.yaml`
+- **Scenes**: `cat /config/scenes.yaml`
+- **Scripts**: `cat /config/scripts.yaml`
+- **Addons**: `ha addons`
+- **System info**: `ha info`, `ha core info`, `ha os info`, `ha host info`
+
+The `.storage/` files are JSON and read-only — NEVER edit them manually.
 
 ## Things that will bite you
 
