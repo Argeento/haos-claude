@@ -186,7 +186,8 @@ case "$SUBCMD" in
           tmp_content="$(cat "$claude_md")"
           printf '%s\n\n%s\n' "$lang_line" "$tmp_content" > "$claude_md"
         fi
-        printf '  \033[1;32m✓ Updated to v%s\033[0m\n' "$REMOTE_VER"
+        printf '  \033[1;32m✓ Updated to v%s\033[0m\n\n' "$REMOTE_VER"
+        exec "${SCRIPT_DIR}/haos" start
       else
         printf '  \033[1;31mUpdate failed, continuing with v%s\033[0m\n' "$LOCAL_VER"
       fi
