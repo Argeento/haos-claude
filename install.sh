@@ -5,7 +5,7 @@ set -euo pipefail
 REPO="Argeento/haos-claude"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/dist"
-DEST="./claude"
+DEST=".claude"
 LANGUAGE="English"
 
 # Update this list when adding new skills
