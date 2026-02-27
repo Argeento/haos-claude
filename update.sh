@@ -5,10 +5,8 @@ set -euo pipefail
 REPO="Argeento/haos-claude"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/dist"
-DEST=".claudet"
-LANGUAGE="English"
+DEST="$HOME/.claude"
 
-# Update this list when adding new skills
 FILES=(
   "version.txt"
   "CLAUDE.md"
@@ -28,27 +26,21 @@ fail()  { printf '\033[1;31m[ERROR]\033[0m %s\n' "$1" >&2; exit 1; }
 
 # ── Header ─────────────────────────────────────────────────
 printf '\n'
-printf '  \033[1mhaos-claude installer\033[0m\n'
+printf '  \033[1mhaos-claude updater\033[0m\n'
 printf '  github.com/%s\n' "${REPO}"
 printf '\n'
 
 # ── Prerequisites ──────────────────────────────────────────
 command -v curl >/dev/null 2>&1 || fail "curl is required but not found."
 
-# ── Language selection ─────────────────────────────────────
-if [ ! -e /dev/tty ]; then
-  warn "No terminal detected. Defaulting to English."
+# ── Read saved language ────────────────────────────────────
+LANGUAGE="English"
+if [ -f "${DEST}/.haos-language" ]; then
+  LANGUAGE="$(cat "${DEST}/.haos-language")"
+  info "Language: ${LANGUAGE} (from previous installation)"
 else
-  printf '  What language should Claude communicate in?\n'
-  printf '  Examples: English, Polski, Deutsch, Français, Español\n'
-  printf '\n'
-  printf '  Language [English]: '
-  read -r LANGUAGE </dev/tty 2>/dev/null || LANGUAGE=""
-  LANGUAGE="${LANGUAGE:-English}"
+  warn "No saved language found. Defaulting to English."
 fi
-
-printf '\n'
-info "Language: ${LANGUAGE}"
 
 # ── Create directories ─────────────────────────────────────
 for file in "${FILES[@]}"; do
@@ -73,32 +65,17 @@ done
 
 [ "${errors}" -gt 0 ] && fail "Failed to download ${errors} file(s). Check your internet connection."
 
-# ── Save language preference ───────────────────────────────
-printf '%s\n' "${LANGUAGE}" > "${DEST}/.haos-language"
-
-# ── Inject language into CLAUDE.md ─────────────────────────
+# ── Re-inject language into CLAUDE.md ──────────────────────
 if [ "${LANGUAGE}" != "English" ]; then
   claude_md="${DEST}/CLAUDE.md"
   lang_line="**Always communicate with the user in ${LANGUAGE}.**"
   tmp_content="$(cat "${claude_md}")"
   printf '%s\n\n%s\n' "${lang_line}" "${tmp_content}" > "${claude_md}"
-  ok "Language instruction added to CLAUDE.md"
+  ok "Language instruction restored in CLAUDE.md"
 fi
 
 # ── Summary ────────────────────────────────────────────────
+new_version="$(cat "${DEST}/version.txt")"
 printf '\n'
-printf '  \033[1;32m✓ Installation complete!\033[0m\n'
-printf '\n'
-printf '  Location:  %s\n' "${DEST}"
-printf '  Language:  %s\n' "${LANGUAGE}"
-printf '  Skills:\n'
-
-for file in "${FILES[@]}"; do
-  [ "${file}" = "CLAUDE.md" ] && continue
-  skill_name="$(basename "$(dirname "${file}")")"
-  printf '    - %s\n' "${skill_name}"
-done
-
-printf '\n'
-printf '  Run \033[1mclaude\033[0m to get started.\n'
+printf '  \033[1;32m✓ Update complete!\033[0m (v%s)\n' "${new_version}"
 printf '\n'

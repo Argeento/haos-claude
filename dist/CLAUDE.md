@@ -68,3 +68,13 @@ All `ha` diagnostic commands (`ha info`, `ha core info`, `ha core logs`, `ha cor
 4. Before updates — MUST backup with `ha backups new`
 5. Log commands — state what you're running before you run it
 6. If you don't know — say so directly instead of guessing
+
+## Version check (MUST run at session start)
+
+At the beginning of every new conversation, silently check for updates:
+
+1. Read local version: `cat ~/.claude/version.txt`
+2. Fetch remote version: `curl -fsSL https://raw.githubusercontent.com/Argeento/haos-claude/main/dist/version.txt`
+3. If they differ — inform the user that a new version is available and ask if they want to update now.
+4. If the user agrees — run the update command yourself: `curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash`
+5. If they match or the check fails (no internet) — say nothing, continue normally.

@@ -44,6 +44,20 @@ Just run `claude` in the SSH terminal. All skills are loaded automatically.
 > show me which addons are using the most resources
 ```
 
-## Reinstall / Update
+## Update
 
-Run the same install command again. It will overwrite existing files with the latest version.
+Claude will automatically check for updates at the start of each session and suggest updating when a new version is available. You can also update manually:
+
+```bash
+curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash
+```
+
+Your language preference is preserved between updates.
+
+## Reinstall
+
+To start fresh (re-select language, etc.):
+
+```bash
+curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/install.sh | bash
+```
