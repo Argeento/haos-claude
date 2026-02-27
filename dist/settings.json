@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ha info*)",
+      "Bash(ha core info*)",
+      "Bash(ha core logs*)",
+      "Bash(ha core check*)",
+      "Bash(ha supervisor info*)",
+      "Bash(ha supervisor logs*)",
+      "Bash(ha os info*)",
+      "Bash(ha host info*)",
+      "Bash(ha network info*)",
+      "Bash(ha resolution info*)",
+      "Bash(ha hardware info*)",
+      "Bash(ha backups list*)",
+      "Bash(ha dns info*)",
+      "Bash(ha dns logs*)",
+      "Bash(ha addons)",
+      "Bash(ha addons info*)",
+      "Bash(ha addons logs*)",
+      "Bash(cat *)",
+      "Bash(du *)",
+      "Bash(ping *)",
+      "Bash(nslookup *)",
+      "Bash(curl *)"
+    ]
+  }
+}

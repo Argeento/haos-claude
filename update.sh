@@ -9,6 +9,7 @@ DEST="$HOME/.claude"
 
 FILES=(
   "version.txt"
+  "settings.json"
   "CLAUDE.md"
   "skills/ha-api-reference/SKILL.md"
   "skills/ha-automations/SKILL.md"

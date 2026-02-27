@@ -11,6 +11,7 @@ LANGUAGE="English"
 # Update this list when adding new skills
 FILES=(
   "version.txt"
+  "settings.json"
   "CLAUDE.md"
   "skills/ha-api-reference/SKILL.md"
   "skills/ha-automations/SKILL.md"
@@ -94,7 +95,7 @@ printf '  Language:  %s\n' "${LANGUAGE}"
 printf '  Skills:\n'
 
 for file in "${FILES[@]}"; do
-  [ "${file}" = "CLAUDE.md" ] && continue
+  [[ "${file}" != skills/* ]] && continue
   skill_name="$(basename "$(dirname "${file}")")"
   printf '    - %s\n' "${skill_name}"
 done
