@@ -6,14 +6,14 @@ Makes Claude aware of the HAOS environment, safety boundaries, CLI commands, API
 
 ## What's included
 
-| Skill | Description |
-|---|---|
-| **ha-cli-reference** | `ha` command-line tool — safe commands, core/addon management, backups |
-| **ha-api-reference** | Supervisor API and Core REST API — endpoints, auth, curl examples |
-| **ha-automations** | Creating and editing automations in YAML (2024.10+ syntax) |
-| **ha-scenes-scripts** | Scenes, scripts, and input helpers |
-| **ha-naming-organization** | Entity naming, areas, labels, file organization, packages |
-| **ha-troubleshooting** | Diagnosing common problems — startup failures, disk space, DNS, backups |
+| Skill                      | Description                                                             |
+|----------------------------|-------------------------------------------------------------------------|
+| **ha-cli-reference**       | `ha` command-line tool — safe commands, core/addon management, backups  |
+| **ha-api-reference**       | Supervisor API and Core REST API — endpoints, auth, curl examples       |
+| **ha-automations**         | Creating and editing automations in YAML (2024.10+ syntax)              |
+| **ha-scenes-scripts**      | Scenes, scripts, and input helpers                                      |
+| **ha-naming-organization** | Entity naming, areas, labels, file organization, packages               |
+| **ha-troubleshooting**     | Diagnosing common problems — startup failures, disk space, DNS, backups |
 
 Plus a global `CLAUDE.md` that teaches Claude about the SSH addon container, forbidden operations, and safe work principles.
 
