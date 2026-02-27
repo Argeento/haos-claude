@@ -92,18 +92,11 @@ printf '  \033[1;32m✓ Installation complete!\033[0m\n'
 printf '\n'
 printf '  Location:  %s\n' "${DEST}"
 printf '  Language:  %s\n' "${LANGUAGE}"
-printf '  Skills:\n'
-
-for file in "${FILES[@]}"; do
-  [[ "${file}" != skills/* ]] && continue
-  skill_name="$(basename "$(dirname "${file}")")"
-  printf '    - %s\n' "${skill_name}"
-done
 
 # ── Check if Claude Code is installed ──────────────────────
 if command -v claude >/dev/null 2>&1; then
   printf '\n'
-  printf '  Run \033[1mclaude\033[0m to get started.\n'
+  printf '  Run \033[38;2;217;119;6mclaude\033[0m to get started.\n'
 else
   printf '\n'
   warn "Claude Code is not installed."
