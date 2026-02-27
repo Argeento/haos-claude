@@ -20,6 +20,8 @@ usage() {
   echo "  haos put <local> <remote>            Copy file to HAOS via SCP" >&2
   echo "  haos api <METHOD> <ENDPOINT> [BODY] [--jq FILTER | --py SCRIPT]" >&2
   echo "                                       Call HA Core REST API" >&2
+  echo "  haos ws <TYPE> [JSON_DATA] [--jq FILTER]" >&2
+  echo "                                       Call HA WebSocket API" >&2
   echo "" >&2
   echo "Examples:" >&2
   echo "  haos start" >&2
@@ -30,6 +32,8 @@ usage() {
   echo "  haos api GET /api/states --jq '[.[] | {entity_id, state}]'" >&2
   echo "  haos api GET /api/states --py /tmp/filter.py" >&2
   echo "  haos api POST /api/services/light/turn_on '{\"entity_id\":\"light.example\"}'" >&2
+  echo "  haos ws config/device_registry/list" >&2
+  echo "  haos ws config/entity_registry/remove '{\"entity_id\":\"sensor.old\"}'" >&2
   exit 1
 }
 
@@ -107,6 +111,36 @@ case "$SUBCMD" in
     fi
     ;;
 
+  ws)
+    [ -z "${HA_URL:-}" ] && { echo "Error: HA_URL not set in $ENV_FILE" >&2; exit 1; }
+    [ -z "${HA_TOKEN:-}" ] && { echo "Error: HA_TOKEN not set in $ENV_FILE" >&2; exit 1; }
+    [ $# -eq 0 ] && { echo "Usage: haos ws <type> [json_data] [--jq FILTER]" >&2; exit 1; }
+
+    WS_TYPE="" WS_DATA="" JQ_FILTER=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --jq) JQ_FILTER="$2"; shift 2 ;;
+        *)
+          if [ -z "$WS_TYPE" ]; then WS_TYPE="$1"
+          else WS_DATA="$1"
+          fi
+          shift ;;
+      esac
+    done
+
+    if [ -n "$WS_DATA" ]; then
+      RESPONSE="$(PYTHONUTF8=1 python3 "${SCRIPT_DIR}/ha_ws.py" "$HA_URL" "$HA_TOKEN" "$WS_TYPE" "$WS_DATA")"
+    else
+      RESPONSE="$(PYTHONUTF8=1 python3 "${SCRIPT_DIR}/ha_ws.py" "$HA_URL" "$HA_TOKEN" "$WS_TYPE")"
+    fi
+
+    if [ -n "$JQ_FILTER" ]; then
+      printf '%s' "$RESPONSE" | jq "$JQ_FILTER"
+    else
+      printf '%s' "$RESPONSE"
+    fi
+    ;;
+
   start)
     command -v claude >/dev/null 2>&1 || { echo "Error: Claude Code is not installed" >&2; exit 1; }
 
@@ -126,6 +160,7 @@ case "$SUBCMD" in
         ".claude/skills/ha-scenes-scripts/SKILL.md"
         ".claude/skills/ha-troubleshooting/SKILL.md"
         "haos"
+        "ha_ws.py"
         "version.txt"
       )
       UPDATE_OK=true

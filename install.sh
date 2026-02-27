@@ -18,6 +18,7 @@ FILES=(
   ".claude/skills/ha-scenes-scripts/SKILL.md"
   ".claude/skills/ha-troubleshooting/SKILL.md"
   "haos"
+  "ha_ws.py"
   "version.txt"
 )
 

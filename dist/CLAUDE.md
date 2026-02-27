@@ -2,7 +2,7 @@
 
 You are running **locally** on the user's PC, connected to Home Assistant OS (HAOS) via SSH and HTTP API.
 
-**You MUST use the `haos` wrapper for ALL interactions with Home Assistant.** Never use raw `ssh`, `scp`, or `curl` to communicate with HAOS — always go through `./haos cmd`, `./haos put`, or `./haos api`.
+**You MUST use the `haos` wrapper for ALL interactions with Home Assistant.** Never use raw `ssh`, `scp`, `curl`, or WebSocket scripts — always go through `./haos cmd`, `./haos put`, `./haos api`, or `./haos ws`.
 
 ## How to interact with HAOS
 
@@ -11,6 +11,7 @@ One wrapper handles all communication:
 - **`./haos cmd <command>`** — runs any command on HAOS via SSH (e.g., `./haos cmd ha info`, `./haos cmd cat /config/automations.yaml`)
 - **`./haos put <local> <remote>`** — copies a local file to HAOS via SCP (e.g., `./haos put /tmp/automations.yaml /config/automations.yaml`)
 - **`./haos api <METHOD> <ENDPOINT> [BODY]`** — calls HA Core REST API over HTTP (e.g., `./haos api GET /api/states`)
+- **`./haos ws <TYPE> [JSON_DATA]`** — calls HA WebSocket API (e.g., `./haos ws config/device_registry/list`)
 
 Config is stored in `~/.claude/.env`. **NEVER read or expose this file** — it contains tokens.
 
@@ -62,6 +63,7 @@ Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient.
 - `./haos cmd rm -rf /config/` or `./haos cmd rm -rf /config/.storage/` — irreversible data loss
 - Editing `home-assistant_v2.db` or any file in `.storage/`
 - Exposing `secrets.yaml` contents, `~/.claude/.env`, or any tokens
+- Installing packages on the user's PC (`pip install`, `npm install`, etc.) — NEVER modify the local system
 
 ## Requires user confirmation
 
@@ -71,6 +73,7 @@ Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient.
 - Addon start/stop/restart/install/uninstall
 - Creating/restoring backups
 - Network configuration changes
+- Deleting entities, devices, or integrations via `./haos ws` (remove/delete operations)
 
 ## Safe (no confirmation needed)
 
@@ -85,7 +88,39 @@ All diagnostic commands: `./haos cmd ha info`, `./haos cmd ha core info`, `./hao
 - **Call service**: `./haos api POST /api/services/light/turn_on '{"entity_id":"light.example"}'`
 - **Render template**: `./haos api POST /api/template '{"template":"{{ states(\"sensor.example\") }}"}'`
 
-**NOT available via REST API** (WebSocket-only, returns 404): `/api/config/device_registry/*`, `/api/config/entity_registry/*`, `/api/config/area_registry/*`, `/api/config/config_entries/*`. To list devices/entities, use `/api/states` with `--jq` instead.
+**NOT available via REST API** (returns 404): device/entity/area registries, config entries. Use `./haos ws` for these instead (see WebSocket API below).
+
+### WebSocket API (registries + management)
+
+Use `./haos ws` for operations unavailable via REST. **This is the complete list** — do NOT try other types.
+
+```bash
+./haos ws <TYPE> [JSON_DATA] [--jq FILTER]
+```
+
+Available registries and commands:
+
+- **Device registry**: `config/device_registry/list`, `update` (`device_id`), `remove_config_entry` (`device_id` + `config_entry_id`)
+- **Entity registry**: `config/entity_registry/list`, `get` (`entity_id`), `get_entries` (`entity_ids`), `update` (`entity_id`), `remove` (`entity_id`)
+- **Area registry**: `config/area_registry/list`, `create` (`name`), `delete` (`area_id`), `update` (`area_id`)
+- **Floor registry**: `config/floor_registry/list`, `create` (`name`), `delete` (`floor_id`), `update` (`floor_id`)
+- **Label registry**: `config/label_registry/list`, `create` (`name`), `delete` (`label_id`), `update` (`label_id`)
+- **Category registry**: `config/category_registry/list` (`scope`), `create` (`scope`, `name`), `delete` (`scope`, `category_id`), `update` (`scope`, `category_id`)
+- **Config entries**: `config_entries/get`, `get_single` (`entry_id`), `update` (`entry_id`), `disable` (`entry_id`)
+
+**There is no `remove_device` or `config_entries/delete` WS command.** To delete an integration, use REST: `./haos api DELETE /api/config/config_entries/entry/<entry_id>`
+
+Supports `--jq` filtering: `./haos ws config/device_registry/list --jq '[.[] | {id, name, manufacturer}]'`
+
+### Deleting entities
+
+- **Orphaned entities** (`"restored": true`, unavailable) — `./haos api DELETE /api/states/<entity_id>`
+- **YAML-defined automations** — remove from `automations.yaml`, then reload: `./haos api POST /api/services/automation/reload`
+- **Entity registry entries** — `./haos ws config/entity_registry/remove '{"entity_id":"..."}'`
+- **Devices** — detach integration: `./haos ws config/device_registry/remove_config_entry '{"device_id":"...","config_entry_id":"..."}'`
+- **Integrations** — `./haos api DELETE /api/config/config_entries/entry/<entry_id>`
+
+When a task is truly impossible via any API, **tell the user** what to do in the HA UI. Do NOT attempt workarounds (pip install, raw curl to internal APIs, etc.).
 
 ### Common patterns
 

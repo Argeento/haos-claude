@@ -70,10 +70,128 @@ Available endpoints (**this is the complete list** — do NOT try other paths):
 | `/api/camera_proxy/<entity_id>`       | GET    | Camera image             |
 | `/api/error_log`                      | GET    | Error log (plaintext)    |
 
-**NOT available via REST** (WebSocket-only, will return 404):
-`/api/config/device_registry/*`, `/api/config/entity_registry/*`, `/api/config/area_registry/*`, `/api/config/config_entries/*`. To list devices/entities, use `/api/states` with `--jq` filtering instead.
+**NOT available via REST** (returns 404) — use `./haos ws` instead for registries. Exception: deleting integrations uses the REST endpoint above.
+
+### HA WebSocket API
+
+Use `./haos ws` for registry operations not available via REST (**this is the complete list** — do NOT try other types):
+
+```bash
+./haos ws <TYPE> [JSON_DATA] [--jq FILTER]
+```
+
+**Note:** `./haos ws` sends one command and returns one response. It does NOT support subscriptions (`subscribe_events`, `subscribe_entities`). For `get_states`, `call_service`, `fire_event` — use `./haos api` (REST).
+
+#### Device registry
+
+| Type | Required params | Optional params |
+|------|----------------|-----------------|
+| `config/device_registry/list` | — | — |
+| `config/device_registry/update` | `device_id` | `area_id`, `name_by_user`, `disabled_by`, `labels` |
+| `config/device_registry/remove_config_entry` | `device_id`, `config_entry_id` | — |
+
+**There is no `remove_device` command.** To remove a device, delete its integration via REST (see below) or detach it with `remove_config_entry`.
+
+#### Entity registry
+
+| Type | Required params | Optional params |
+|------|----------------|-----------------|
+| `config/entity_registry/list` | — | — |
+| `config/entity_registry/get` | `entity_id` | — |
+| `config/entity_registry/get_entries` | `entity_ids` (array) | — |
+| `config/entity_registry/update` | `entity_id` | `name`, `icon`, `area_id`, `disabled_by`, `hidden_by`, `new_entity_id`, `aliases`, `labels`, `categories`, `device_class`, `options_domain`, `options` |
+| `config/entity_registry/remove` | `entity_id` | — |
+
+#### Area registry
+
+| Type | Required params | Optional params |
+|------|----------------|-----------------|
+| `config/area_registry/list` | — | — |
+| `config/area_registry/create` | `name` | `icon`, `floor_id`, `labels`, `aliases`, `picture` |
+| `config/area_registry/delete` | `area_id` | — |
+| `config/area_registry/update` | `area_id` | `name`, `icon`, `floor_id`, `labels`, `aliases`, `picture` |
+
+#### Floor registry
+
+| Type | Required params | Optional params |
+|------|----------------|-----------------|
+| `config/floor_registry/list` | — | — |
+| `config/floor_registry/create` | `name` | `aliases`, `icon`, `level` |
+| `config/floor_registry/delete` | `floor_id` | — |
+| `config/floor_registry/update` | `floor_id` | `name`, `aliases`, `icon`, `level` |
+
+#### Label registry
+
+| Type | Required params | Optional params |
+|------|----------------|-----------------|
+| `config/label_registry/list` | — | — |
+| `config/label_registry/create` | `name` | `color`, `description`, `icon` |
+| `config/label_registry/delete` | `label_id` | — |
+| `config/label_registry/update` | `label_id` | `name`, `color`, `description`, `icon` |
+
+#### Category registry
+
+| Type | Required params | Optional params |
+|------|----------------|-----------------|
+| `config/category_registry/list` | `scope` | — |
+| `config/category_registry/create` | `scope`, `name` | `icon` |
+| `config/category_registry/delete` | `scope`, `category_id` | — |
+| `config/category_registry/update` | `scope`, `category_id` | `name`, `icon` |
+
+#### Config entries (integrations)
+
+| Type | Required params | Optional params |
+|------|----------------|-----------------|
+| `config_entries/get` | — | `domain`, `type_filter` |
+| `config_entries/get_single` | `entry_id` | — |
+| `config_entries/update` | `entry_id` | `title`, `pref_disable_new_entities`, `pref_disable_polling` |
+| `config_entries/disable` | `entry_id` | `disabled_by` |
+
+**To delete an integration**, use REST API (not WS): `./haos api DELETE /api/config/config_entries/entry/<entry_id>`
 
 ## Examples
+
+### List all devices with manufacturer info
+
+```bash
+./haos ws config/device_registry/list --jq '[.[] | {id, name, manufacturer, model}]'
+```
+
+### Remove entity from registry
+
+```bash
+./haos ws config/entity_registry/remove '{"entity_id":"sensor.old_sensor"}'
+```
+
+### Delete integration (config entry) — via REST
+
+```bash
+./haos api DELETE /api/config/config_entries/entry/abc123def456
+```
+
+### Detach integration from device
+
+```bash
+./haos ws config/device_registry/remove_config_entry '{"device_id":"abc123","config_entry_id":"xyz789"}'
+```
+
+### List all areas
+
+```bash
+./haos ws config/area_registry/list --jq '[.[] | {id: .area_id, name}]'
+```
+
+### Create a new floor
+
+```bash
+./haos ws config/floor_registry/create '{"name":"Ground Floor","level":0}'
+```
+
+### Disable an integration
+
+```bash
+./haos ws config_entries/disable '{"entry_id":"abc123","disabled_by":"user"}'
+```
 
 ### Get all entity states
 
