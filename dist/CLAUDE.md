@@ -78,3 +78,7 @@ At the beginning of every new conversation, silently check for updates:
 3. If they differ — inform the user that a new version is available and ask if they want to update now.
 4. If the user agrees — run the update command yourself: `curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash`
 5. If they match or the check fails (no internet) — say nothing, continue normally.
+
+After the version check, display the following disclaimer (in the user's language):
+
+> **This software is provided without any warranty.** Before starting any work, create a full Home Assistant backup (`ha backups new --name "pre-claude"`) to protect your data in case of errors.
