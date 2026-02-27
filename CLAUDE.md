@@ -13,7 +13,6 @@ This is the **meta project** — the repository that builds and distributes haos
 │   ├── haos                 # CLI wrapper script (cmd/put/api/start)
 │   └── version.txt          # Current version (semver)
 ├── install.sh               # User runs this to install (downloads dist/ from GitHub)
-├── update.sh                # User runs this to update (preserves .env config)
 └── README.md
 ```
 
@@ -38,7 +37,7 @@ The `haos` wrapper has 4 subcommands:
 - All HAOS commands in skills/CLAUDE.md use `haos cmd` prefix (not bare `ha` or `haos ha`)
 - All API calls use `haos api` (not `ha-api` or raw `curl`)
 - `dist/.claude/settings.json` has only one permission: `Bash(haos *)`
-- Language is stored in `.env` as `HAOS_LANGUAGE`, injected into CLAUDE.md by install/update scripts
+- Language is stored in `.env` as `HAOS_LANGUAGE`, injected into CLAUDE.md by install script and auto-update
 - `.env` is NEVER overwritten on reinstall (only created if missing)
 - Version format: semver in `dist/version.txt`
 
@@ -47,11 +46,11 @@ The `haos` wrapper has 4 subcommands:
 - Every command that runs on HAOS must go through `haos cmd`
 - Every API call must go through `haos api`
 - Never use bare `ha`, `ssh`, `scp`, or `curl` in examples
-- Test that `install.sh` and `update.sh` file lists match actual files in `dist/`
+- Test that `install.sh` and `haos start` auto-update file lists match actual files in `dist/`
 
 ## Release workflow
 
 1. Edit files in `dist/`
 2. Bump `dist/version.txt`
 3. Commit and push to `main`
-4. Users get updates via `update.sh` or auto-check in Claude session start
+4. Users get updates automatically via `haos start`

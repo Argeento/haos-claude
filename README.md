@@ -68,14 +68,7 @@ From your project folder, run `haos start` to launch Claude with automatic sessi
 
 ## Update
 
-Claude will automatically check for updates at the start of each session and suggest updating when a new version is available. You can also update manually:
-
-```bash
-cd my-ha
-curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash
-```
-
-Your language preference and connection config are preserved between updates.
+Updates are applied automatically when you run `./haos start`. Your `.env` config and language preference are preserved.
 
 ## Reinstall
 

@@ -110,12 +110,42 @@ case "$SUBCMD" in
   start)
     command -v claude >/dev/null 2>&1 || { echo "Error: Claude Code is not installed" >&2; exit 1; }
 
-    # Version check
+    # Auto-update
     LOCAL_VER="$(cat "${SCRIPT_DIR}/version.txt" 2>/dev/null || echo "")"
     REMOTE_VER="$(curl -fsSL --max-time 5 "https://raw.githubusercontent.com/Argeento/haos-claude/main/dist/version.txt" 2>/dev/null || echo "")"
     if [ -n "$REMOTE_VER" ] && [ -n "$LOCAL_VER" ] && [ "$LOCAL_VER" != "$REMOTE_VER" ]; then
-      printf '\n  \033[1;33mUpdate available: v%s → v%s\033[0m\n' "$LOCAL_VER" "$REMOTE_VER"
-      printf '  Run to update: curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash\n\n'
+      printf '\n  \033[1;33mUpdating: v%s → v%s\033[0m\n' "$LOCAL_VER" "$REMOTE_VER"
+      UPDATE_BASE="https://raw.githubusercontent.com/Argeento/haos-claude/main/dist"
+      UPDATE_FILES=(
+        "CLAUDE.md"
+        ".claude/settings.json"
+        ".claude/skills/ha-api-reference/SKILL.md"
+        ".claude/skills/ha-automations/SKILL.md"
+        ".claude/skills/ha-cli-reference/SKILL.md"
+        ".claude/skills/ha-naming-organization/SKILL.md"
+        ".claude/skills/ha-scenes-scripts/SKILL.md"
+        ".claude/skills/ha-troubleshooting/SKILL.md"
+        "haos"
+        "version.txt"
+      )
+      UPDATE_OK=true
+      for uf in "${UPDATE_FILES[@]}"; do
+        mkdir -p "$(dirname "${SCRIPT_DIR}/${uf}")"
+        curl -fsSL --retry 2 --retry-delay 1 -o "${SCRIPT_DIR}/${uf}" "${UPDATE_BASE}/${uf}" 2>/dev/null || { UPDATE_OK=false; break; }
+      done
+      if $UPDATE_OK; then
+        chmod +x "${SCRIPT_DIR}/haos"
+        LANGUAGE="${HAOS_LANGUAGE:-English}"
+        if [ "$LANGUAGE" != "English" ]; then
+          claude_md="${SCRIPT_DIR}/CLAUDE.md"
+          lang_line="**Always communicate with the user in ${LANGUAGE}.**"
+          tmp_content="$(cat "$claude_md")"
+          printf '%s\n\n%s\n' "$lang_line" "$tmp_content" > "$claude_md"
+        fi
+        printf '  \033[1;32m✓ Updated to v%s\033[0m\n' "$REMOTE_VER"
+      else
+        printf '  \033[1;31mUpdate failed, continuing with v%s\033[0m\n' "$LOCAL_VER"
+      fi
     fi
 
     # SSH check
