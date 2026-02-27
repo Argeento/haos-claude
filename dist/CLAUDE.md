@@ -18,7 +18,33 @@ Config is stored in `~/.claude/.env`. **NEVER read or expose this file** — it 
 
 HAOS runs Docker containers (Supervisor, Core on port 8123, DNS on 172.30.32.3, addons) on a minimal Buildroot host. Host filesystem is read-only (erofs + overlay). All persistent data lives on the `hassos-data` partition (ext4) at `/mnt/data/`. System uses A/B kernel+system slots with RAUC for updates.
 
-The SSH addon container runs Alpine Linux with the `ha` CLI, `jq`, `curl`, and `cat` available. Python is NOT available.
+The SSH addon container runs Alpine Linux with the `ha` CLI, `jq`, `curl`, and `cat` available. Python is NOT available on HAOS.
+
+## Local environment (your PC)
+
+You run on the user's PC. Only `./haos` commands are auto-allowed — **never use shell pipes (`|`) or redirects (`>`)** as they will be blocked by permissions.
+
+**`jq` and `python` are NOT available on HAOS** — they are local tools. To process API JSON output, use the built-in `--jq` or `--py` flags:
+
+- **`--jq '<filter>'`** — filters JSON with jq (preferred, shorter syntax):
+  ```bash
+  ./haos api GET /api/states --jq '[.[] | {entity_id, state}]'
+  ./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light."))]'
+  ```
+- **`--py <script>`** — filters JSON with a Python script (for complex processing). The script receives raw JSON on stdin:
+  ```bash
+  # 1. Write the filter script (use the Write tool — no Bash needed)
+  # /tmp/filter.py:
+  #   import json, sys
+  #   data = json.load(sys.stdin)
+  #   for e in data:
+  #       print(f"{e['entity_id']}: {e['state']}")
+  #
+  # 2. Run:
+  ./haos api GET /api/states --py /tmp/filter.py
+  ```
+
+Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient.
 
 ## Critical files on HAOS (/config/)
 

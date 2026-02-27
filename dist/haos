@@ -18,7 +18,8 @@ usage() {
   echo "  haos start                           Launch Claude with session checks" >&2
   echo "  haos cmd <command>                   Run command on HAOS via SSH" >&2
   echo "  haos put <local> <remote>            Copy file to HAOS via SCP" >&2
-  echo "  haos api <METHOD> <ENDPOINT> [BODY]  Call HA Core REST API" >&2
+  echo "  haos api <METHOD> <ENDPOINT> [BODY] [--jq FILTER | --py SCRIPT]" >&2
+  echo "                                       Call HA Core REST API" >&2
   echo "" >&2
   echo "Examples:" >&2
   echo "  haos start" >&2
@@ -26,6 +27,8 @@ usage() {
   echo "  haos cmd cat /config/automations.yaml" >&2
   echo "  haos put /tmp/automations.yaml /config/automations.yaml" >&2
   echo "  haos api GET /api/states" >&2
+  echo "  haos api GET /api/states --jq '[.[] | {entity_id, state}]'" >&2
+  echo "  haos api GET /api/states --py /tmp/filter.py" >&2
   echo "  haos api POST /api/services/light/turn_on '{\"entity_id\":\"light.example\"}'" >&2
   exit 1
 }
@@ -63,19 +66,44 @@ case "$SUBCMD" in
       echo "http://homeassistant:8123/profile/security" >&2
       exit 1
     fi
-    METHOD="${1:-GET}"
-    ENDPOINT="${2:-/api/}"
-    BODY="${3:-}"
+
+    # Parse positional args and optional --jq / --py flags
+    METHOD="" ENDPOINT="" BODY="" JQ_FILTER="" PY_SCRIPT=""
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --jq) JQ_FILTER="$2"; shift 2 ;;
+        --py) PY_SCRIPT="$2"; shift 2 ;;
+        *)
+          if [ -z "$METHOD" ]; then METHOD="$1"
+          elif [ -z "$ENDPOINT" ]; then ENDPOINT="$1"
+          else BODY="$1"
+          fi
+          shift ;;
+      esac
+    done
+    METHOD="${METHOD:-GET}"
+    ENDPOINT="${ENDPOINT:-/api/}"
+
+    # Fetch API response
     if [ -n "$BODY" ]; then
-      curl -s -X "$METHOD" \
+      RESPONSE="$(curl -s -X "$METHOD" \
         -H "Authorization: Bearer $HA_TOKEN" \
         -H "Content-Type: application/json" \
         -d "$BODY" \
-        "${HA_URL}${ENDPOINT}"
+        "${HA_URL}${ENDPOINT}")"
     else
-      curl -s -X "$METHOD" \
+      RESPONSE="$(curl -s -X "$METHOD" \
         -H "Authorization: Bearer $HA_TOKEN" \
-        "${HA_URL}${ENDPOINT}"
+        "${HA_URL}${ENDPOINT}")"
+    fi
+
+    # Output: apply --jq, --py, or raw
+    if [ -n "$JQ_FILTER" ]; then
+      printf '%s' "$RESPONSE" | jq "$JQ_FILTER"
+    elif [ -n "$PY_SCRIPT" ]; then
+      printf '%s' "$RESPONSE" | PYTHONUTF8=1 python3 "$PY_SCRIPT"
+    else
+      printf '%s' "$RESPONSE"
     fi
     ;;
 
@@ -117,7 +145,23 @@ case "$SUBCMD" in
       exit 1
     fi
 
+    # Tool checks (non-blocking)
+    printf '  Checking jq... '
+    if command -v jq >/dev/null 2>&1; then
+      printf '\033[1;32mOK\033[0m\n'
+    else
+      printf '\033[1;33mNOT FOUND\033[0m — install jq for faster JSON processing (./haos api ... --jq)\n'
+    fi
+
+    printf '  Checking Python... '
+    if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+      printf '\033[1;32mOK\033[0m\n'
+    else
+      printf '\033[1;33mNOT FOUND\033[0m — install Python 3 for JSON processing (./haos api ... --py)\n'
+    fi
+
     printf '\n'
+    export PYTHONUTF8=1
     unset CLAUDECODE
     claude "Display the session start disclaimer as defined in CLAUDE.md"
     ;;
