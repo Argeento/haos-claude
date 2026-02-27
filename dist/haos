@@ -227,9 +227,12 @@ case "$SUBCMD" in
       else
         printf '\033[1;31mFAILED\033[0m\n'
         echo "  WebSocket connection failed. Check HA_URL and HA_TOKEN." >&2
+        exit 1
       fi
     else
-      printf '\033[1;33mSKIPPED\033[0m — Python 3 required for WebSocket\n'
+      printf '\033[1;31mFAILED\033[0m\n'
+      echo "  Python 3 is required for WebSocket. Install Python 3 and try again." >&2
+      exit 1
     fi
 
     # Tool checks (non-blocking)
@@ -244,7 +247,9 @@ case "$SUBCMD" in
     if [ -n "$PYTHON" ]; then
       printf '\033[1;32mOK\033[0m\n'
     else
-      printf '\033[1;33mNOT FOUND\033[0m — install Python 3 for JSON processing (./haos api ... --py)\n'
+      printf '\033[1;31mNOT FOUND\033[0m\n'
+      echo "  Python 3 is required. Install it and try again." >&2
+      exit 1
     fi
 
     printf '\n'
