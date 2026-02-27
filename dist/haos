@@ -81,8 +81,42 @@ case "$SUBCMD" in
 
   start)
     command -v claude >/dev/null 2>&1 || { echo "Error: Claude Code is not installed" >&2; exit 1; }
+
+    # Version check
+    LOCAL_VER="$(cat "${SCRIPT_DIR}/version.txt" 2>/dev/null || echo "")"
+    REMOTE_VER="$(curl -fsSL --max-time 5 "https://raw.githubusercontent.com/Argeento/haos-claude/main/dist/version.txt" 2>/dev/null || echo "")"
+    if [ -n "$REMOTE_VER" ] && [ -n "$LOCAL_VER" ] && [ "$LOCAL_VER" != "$REMOTE_VER" ]; then
+      printf '\n  \033[1;33mUpdate available: v%s → v%s\033[0m\n' "$LOCAL_VER" "$REMOTE_VER"
+      printf '  Run to update: curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash\n\n'
+    fi
+
+    # SSH check
+    printf '  Checking SSH connection... '
+    if ssh -o ConnectTimeout=10 -o BatchMode=yes -p "${HAOS_SSH_PORT:-22}" "$HAOS_SSH_HOST" "ha core info" >/dev/null 2>&1; then
+      printf '\033[1;32mOK\033[0m\n'
+    else
+      printf '\033[1;31mFAILED\033[0m\n'
+      echo "  Check SSH connectivity and config in $ENV_FILE" >&2
+    fi
+
+    # API check
+    printf '  Checking API connection... '
+    API_RESP="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+      -H "Authorization: Bearer $HA_TOKEN" \
+      "${HA_URL}/api/" 2>/dev/null || echo "000")"
+    if [ "$API_RESP" = "200" ]; then
+      printf '\033[1;32mOK\033[0m\n'
+    elif [ "$API_RESP" = "401" ]; then
+      printf '\033[1;31mFAILED (401)\033[0m\n'
+      echo "  Token is invalid or expired. Generate a new one in HA UI → Profile → Security." >&2
+    else
+      printf '\033[1;31mFAILED (%s)\033[0m\n' "$API_RESP"
+      echo "  Check HA_URL and HA_TOKEN in $ENV_FILE" >&2
+    fi
+
+    printf '\n'
     unset CLAUDECODE
-    claude "Run session start checks as defined in CLAUDE.md"
+    claude
     ;;
 
   *)

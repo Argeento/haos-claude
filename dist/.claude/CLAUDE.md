@@ -108,31 +108,6 @@ Workflow:
 
 ## Session start (MUST run at the beginning of every conversation)
 
-### 1. Version check
-
-1. Read local version: `cat ~/.claude/version.txt`
-2. Fetch remote version: `curl -fsSL https://raw.githubusercontent.com/Argeento/haos-claude/main/dist/version.txt`
-3. If they differ — inform the user that a new version is available and ask if they want to update now.
-4. If the user agrees — run the update command yourself: `curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash`
-5. If they match or the check fails (no internet) — say nothing, continue normally.
-
-### 2. SSH check
-
-Run: `haos cmd ha core info`
-
-- If it returns Core info — SSH connection is working.
-- If it fails — tell the user to check SSH connectivity and config in `~/.claude/.env`.
-
-### 3. API check
-
-Run: `haos api GET /api/`
-
-- If it returns `{"message": "API running."}` — ready to work.
-- If it shows an error about missing token — tell the user to add `HA_TOKEN` to `~/.claude/.env`.
-- If it returns 401 — token is invalid or expired. Tell the user to generate a new one.
-
-### 4. Disclaimer
-
-Display the following (in the user's language):
+Display the following disclaimer (in the user's language):
 
 > **This software is provided without any warranty.** Before starting any work, create a full Home Assistant backup (`haos cmd ha backups new --name "pre-claude"`) to protect your data in case of errors.
