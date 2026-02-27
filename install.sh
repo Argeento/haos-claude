@@ -5,21 +5,23 @@ set -euo pipefail
 REPO="Argeento/haos-claude"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/dist"
-DEST=".claude"
-LANGUAGE="English"
+DEST="$HOME/.claude"
 
-# Update this list when adding new skills
-FILES=(
-  "version.txt"
-  "settings.json"
-  "CLAUDE.md"
-  "ha-api"
-  "skills/ha-api-reference/SKILL.md"
-  "skills/ha-automations/SKILL.md"
-  "skills/ha-cli-reference/SKILL.md"
-  "skills/ha-naming-organization/SKILL.md"
-  "skills/ha-scenes-scripts/SKILL.md"
-  "skills/ha-troubleshooting/SKILL.md"
+# Files that go into ~/.claude/
+CLAUDE_FILES=(
+  ".claude/CLAUDE.md"
+  ".claude/settings.json"
+  ".claude/skills/ha-api-reference/SKILL.md"
+  ".claude/skills/ha-automations/SKILL.md"
+  ".claude/skills/ha-cli-reference/SKILL.md"
+  ".claude/skills/ha-naming-organization/SKILL.md"
+  ".claude/skills/ha-scenes-scripts/SKILL.md"
+  ".claude/skills/ha-troubleshooting/SKILL.md"
+)
+
+# Scripts that go into PATH
+BIN_FILES=(
+  "haos"
 )
 
 # ── Helpers ────────────────────────────────────────────────
@@ -27,6 +29,18 @@ info()  { printf '\033[1;34m[INFO]\033[0m %s\n' "$1"; }
 ok()    { printf '\033[1;32m[ OK ]\033[0m %s\n' "$1"; }
 warn()  { printf '\033[1;33m[WARN]\033[0m %s\n' "$1"; }
 fail()  { printf '\033[1;31m[ERROR]\033[0m %s\n' "$1" >&2; exit 1; }
+
+download() {
+  local url="$1" dest_path="$2" label="$3"
+  mkdir -p "$(dirname "${dest_path}")"
+  if curl -fsSL --retry 3 --retry-delay 2 -o "${dest_path}" "${url}"; then
+    ok "  ${label}"
+    return 0
+  else
+    warn "  Failed: ${label}"
+    return 1
+  fi
+}
 
 # ── Header ─────────────────────────────────────────────────
 printf '\n'
@@ -36,54 +50,82 @@ printf '\n'
 
 # ── Prerequisites ──────────────────────────────────────────
 command -v curl >/dev/null 2>&1 || fail "curl is required but not found."
+command -v ssh  >/dev/null 2>&1 || fail "ssh is required but not found."
 
-# ── Language selection ─────────────────────────────────────
-if [ ! -e /dev/tty ]; then
-  warn "No terminal detected. Defaulting to English."
+# ── Create .env with defaults ─────────────────────────────
+mkdir -p "${DEST}"
+
+if [ -f "${DEST}/.env" ]; then
+  info "Config already exists at ${DEST}/.env — keeping it."
 else
-  printf '  What language should Claude communicate in?\n'
-  printf '  Examples: English, Polski, Deutsch, Français, Español\n'
-  printf '\n'
-  printf '  Language [English]: '
-  read -r LANGUAGE </dev/tty 2>/dev/null || LANGUAGE=""
-  LANGUAGE="${LANGUAGE:-English}"
+  cat > "${DEST}/.env" <<'ENVFILE'
+# haos-claude config
+# Edit this file with your Home Assistant connection details
+
+# Language for Claude to communicate in (e.g., English, Polski, Deutsch, Français, Español)
+HAOS_LANGUAGE="English"
+
+# SSH connection (SSH & Web Terminal addon with key-based auth)
+HAOS_SSH_HOST="root@homeassistant.local"
+HAOS_SSH_PORT="22"
+
+# Home Assistant REST API
+# URL of your Home Assistant instance
+HA_URL="http://homeassistant.local:8123"
+
+# Long-Lived Access Token
+# Create one in HA UI: Profile → Security → Long-Lived Access Tokens
+# http://homeassistant.local:8123/profile/security
+HA_TOKEN="paste-your-token-here"
+ENVFILE
+  chmod 600 "${DEST}/.env"
+  ok "Config created at ${DEST}/.env"
 fi
 
-printf '\n'
-info "Language: ${LANGUAGE}"
-
-# ── Create directories ─────────────────────────────────────
-for file in "${FILES[@]}"; do
-  mkdir -p "${DEST}/$(dirname "${file}")"
-done
-
 # ── Download files ─────────────────────────────────────────
+printf '\n'
 info "Downloading files..."
 errors=0
 
-for file in "${FILES[@]}"; do
-  url="${BASE_URL}/${file}"
-  dest_path="${DEST}/${file}"
+# version.txt → ~/.claude/version.txt
+download "${BASE_URL}/version.txt" "${DEST}/version.txt" "version.txt" || errors=$((errors + 1))
 
-  if curl -fsSL --retry 3 --retry-delay 2 -o "${dest_path}" "${url}"; then
-    ok "  ${file}"
-  else
-    warn "  Failed: ${file}"
-    errors=$((errors + 1))
-  fi
+# .claude/* files → ~/.claude/*
+for file in "${CLAUDE_FILES[@]}"; do
+  dest_name="${file#.claude/}"
+  download "${BASE_URL}/${file}" "${DEST}/${dest_name}" "${dest_name}" || errors=$((errors + 1))
+done
+
+# Bin scripts → ~/.claude/ (then symlinked to PATH)
+for file in "${BIN_FILES[@]}"; do
+  download "${BASE_URL}/${file}" "${DEST}/${file}" "${file}" || errors=$((errors + 1))
 done
 
 [ "${errors}" -gt 0 ] && fail "Failed to download ${errors} file(s). Check your internet connection."
 
-# ── Install ha-api wrapper ────────────────────────────────
-chmod +x "${DEST}/ha-api"
-ln -sf "$(pwd)/${DEST}/ha-api" /usr/local/bin/ha-api 2>/dev/null || true
-ok "ha-api wrapper installed"
+# ── Install wrappers ──────────────────────────────────────
+chmod +x "${DEST}/haos"
 
-# ── Save language preference ───────────────────────────────
-printf '%s\n' "${LANGUAGE}" > "${DEST}/.haos-language"
+# Try to symlink to a directory in PATH
+BIN_DIR=""
+for dir in "$HOME/.local/bin" "/usr/local/bin"; do
+  if [ -d "${dir}" ] && echo "$PATH" | grep -q "${dir}"; then
+    BIN_DIR="${dir}"
+    break
+  fi
+done
+
+if [ -z "${BIN_DIR}" ]; then
+  mkdir -p "$HOME/.local/bin"
+  BIN_DIR="$HOME/.local/bin"
+fi
+
+ln -sf "${DEST}/haos" "${BIN_DIR}/haos" 2>/dev/null || true
+ok "Wrapper installed: haos → ${BIN_DIR}"
 
 # ── Inject language into CLAUDE.md ─────────────────────────
+source "${DEST}/.env"
+LANGUAGE="${HAOS_LANGUAGE:-English}"
 if [ "${LANGUAGE}" != "English" ]; then
   claude_md="${DEST}/CLAUDE.md"
   lang_line="**Always communicate with the user in ${LANGUAGE}.**"
@@ -93,26 +135,27 @@ if [ "${LANGUAGE}" != "English" ]; then
 fi
 
 # ── Summary ────────────────────────────────────────────────
+version="$(cat "${DEST}/version.txt")"
 printf '\n'
-printf '  \033[1;32m✓ Installation complete!\033[0m\n'
+printf '  \033[1;32m✓ Installation complete!\033[0m (v%s)\n' "${version}"
 printf '\n'
 printf '  Location:  %s\n' "${DEST}"
-printf '  Language:  %s\n' "${LANGUAGE}"
+printf '  Config:    %s/.env\n' "${DEST}"
 
-# ── Tip: enable API access ────────────────────────────────
+# ── Next steps ────────────────────────────────────────────
 printf '\n'
-info "For full functionality (entity management, service calls),"
-info "create a Long-Lived Access Token in HA UI:"
-printf '  Profile → Security → Long-Lived Access Tokens → Create Token\n'
-printf '  Then run: echo "YOUR_TOKEN" > ~/.claude/.ha-token\n'
+printf '  \033[1mNext steps:\033[0m\n'
+printf '\n'
+printf '  1. Edit \033[1m%s/.env\033[0m with your settings:\n' "${DEST}"
+printf '     - Language, SSH host and port\n'
+printf '     - Home Assistant URL\n'
+printf '     - Long-Lived Access Token (HA UI → Profile → Security)\n'
+printf '\n'
+printf '  2. Run \033[38;2;217;119;6mhaos start\033[0m to launch Claude\n'
 
-# ── Check if Claude Code is installed ──────────────────────
-if command -v claude >/dev/null 2>&1; then
-  printf '\n'
-  printf '  Run \033[38;2;217;119;6mclaude\033[0m to get started.\n'
-else
+if ! command -v claude >/dev/null 2>&1; then
   printf '\n'
   warn "Claude Code is not installed."
-  printf '  Install it first: \033[4mhttps://code.claude.com/docs/en/setup#install-claude-code\033[0m\n'
+  printf '  Install it first: \033[4mhttps://docs.anthropic.com/en/docs/claude-code/overview\033[0m\n'
 fi
 printf '\n'

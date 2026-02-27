@@ -7,12 +7,12 @@ description: Reference for Home Assistant Supervisor API and Core REST API. Use 
 
 ## Instructions
 
-### Supervisor API (from addon container)
+### Supervisor API (via SSH)
 
-From inside the SSH addon, the Supervisor API is available with the `$SUPERVISOR_TOKEN`. No additional setup needed.
+Claude runs locally and connects to HAOS via the `haos` wrapper. The `$SUPERVISOR_TOKEN` is available inside the SSH session — no additional setup needed. Use single quotes so the variable expands on the HAOS side.
 
 ```bash
-curl -sSL -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/<endpoint>
+haos cmd 'curl -sSL -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/<endpoint>'
 ```
 
 Available endpoints:
@@ -39,10 +39,10 @@ Available endpoints:
 
 ### HA Core REST API
 
-Use the `ha-api` wrapper — it handles authentication automatically via `~/.claude/.ha-token`.
+Use `haos api` — it handles authentication automatically via `~/.claude/.env`.
 
 ```bash
-ha-api <METHOD> <ENDPOINT> [JSON_BODY]
+haos api <METHOD> <ENDPOINT> [JSON_BODY]
 ```
 
 Available endpoints:
@@ -66,47 +66,47 @@ Available endpoints:
 ### Get all entity states
 
 ```bash
-ha-api GET /api/states
+haos api GET /api/states
 ```
 
 ### Call a service
 
 ```bash
-ha-api POST /api/services/light/turn_on '{"entity_id": "light.living_room_ceiling"}'
+haos api POST /api/services/light/turn_on '{"entity_id": "light.living_room_ceiling"}'
 ```
 
 ### Get a single entity state
 
 ```bash
-ha-api GET /api/states/sensor.living_room_temperature
+haos api GET /api/states/sensor.living_room_temperature
 ```
 
 ### Render a Jinja2 template
 
 ```bash
-ha-api POST /api/template '{"template": "{{ states(\"sensor.living_room_temperature\") }}"}'
+haos api POST /api/template '{"template": "{{ states(\"sensor.living_room_temperature\") }}"}'
 ```
 
 ## Troubleshooting
 
-### "401 Unauthorized" or token error from `ha-api`
+### "401 Unauthorized" or token error from `haos api`
 
 Cause: Missing, invalid, or expired Long-Lived Access Token (LLAT).
-Solution: Generate a new LLAT in HA UI → Profile → Security → Long-Lived Access Tokens. Save it: `echo "YOUR_TOKEN" > ~/.claude/.ha-token`
+Solution: Generate a new LLAT in HA UI → Profile → Security → Long-Lived Access Tokens. Then update `HA_TOKEN` in `~/.claude/.env`.
 
-Note: `$SUPERVISOR_TOKEN` does NOT work with the Core REST API. The `ha-api` wrapper uses LLAT from `~/.claude/.ha-token`.
+Note: `$SUPERVISOR_TOKEN` does NOT work with the Core REST API. `haos api` uses LLAT from `~/.claude/.env`.
 
 ### "401 Unauthorized" from Supervisor endpoints (`/supervisor/*`, `/os/*`)
 
 Cause: Missing or invalid `$SUPERVISOR_TOKEN`.
-Solution: The token is automatically injected by the addon environment. Verify with `echo $SUPERVISOR_TOKEN`. If empty, the addon may not have proper Supervisor access configured.
+Solution: The token is automatically available inside the SSH session. Verify with `haos cmd 'echo $SUPERVISOR_TOKEN'`. If empty, the SSH addon may not have proper Supervisor access configured.
 
 ### Supervisor API returns "502 Bad Gateway"
 
 Cause: HA Core is not running or still starting.
-Solution: Check Core status with `ha core info`. If it's stopped, start it with `ha core start`.
+Solution: Check Core status with `haos cmd ha core info`. If it's stopped, start it with `haos cmd ha core start`.
 
 ### Service call has no effect
 
 Cause: Wrong entity_id, wrong service domain, or entity unavailable.
-Solution: First verify the entity exists: `GET /core/api/states/<entity_id>`. Then check the correct service name: `GET /core/api/services`.
+Solution: First verify the entity exists: `haos api GET /api/states/<entity_id>`. Then check the correct service name: `haos api GET /api/services`.

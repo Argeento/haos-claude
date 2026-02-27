@@ -1,8 +1,8 @@
 # haos-claude
 
-Skills and system prompt for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) on Home Assistant OS.
+Skills and system prompt for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) to manage Home Assistant OS.
 
-Makes Claude aware of the HAOS environment, safety boundaries, CLI commands, APIs, and best practices — so you can manage your smart home from the terminal without worrying about breaking things.
+Claude runs **locally on your PC** and connects to HAOS via SSH and the REST API — so your config, tokens, and Claude settings persist between reboots without any hacks.
 
 ## What's included
 
@@ -15,29 +15,46 @@ Makes Claude aware of the HAOS environment, safety boundaries, CLI commands, API
 | **ha-naming-organization** | Entity naming, areas, labels, file organization, packages               |
 | **ha-troubleshooting**     | Diagnosing common problems — startup failures, disk space, DNS, backups |
 
-Plus a global `CLAUDE.md` that teaches Claude about the SSH addon container, forbidden operations, and safe work principles.
+Plus a global `CLAUDE.md` that teaches Claude about safety boundaries, forbidden operations, and how to communicate with HAOS through the `haos` wrapper.
+
+## How it works
+
+A single wrapper script handles all communication with Home Assistant:
+
+- **`haos cmd <command>`** — runs any command on HAOS via SSH (e.g., `haos cmd ha info`, `haos cmd cat /config/automations.yaml`)
+- **`haos put <local> <remote>`** — uploads a local file to HAOS via SSH
+- **`haos api <METHOD> <ENDPOINT> [BODY]`** — calls the HA Core REST API over HTTP (e.g., `haos api GET /api/states`)
+
+Config (SSH host, HA URL, token) is stored in `~/.claude/.env`.
+
+## Requirements
+
+- [Home Assistant OS](https://www.home-assistant.io/installation/) with the [SSH & Web Terminal](https://github.com/hassio-addons/addon-ssh) addon (key-based auth)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed on your PC
+- A [Long-Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) from Home Assistant
 
 ## Install
 
-SSH into your Home Assistant and run:
+Run on your **local PC** (not on HAOS):
 
 ```bash
 curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/install.sh | bash
 ```
 
-The installer will ask you what language Claude should use, then download everything to `~/.claude/`.
+The installer will:
 
-## Requirements
+1. Ask what language Claude should use
+2. Download all files to `~/.claude/`
+3. Create a config file at `~/.claude/.env` with default values
 
-- [Home Assistant OS](https://www.home-assistant.io/installation/) with the [SSH & Web Terminal](https://github.com/hassio-addons/addon-ssh) addon
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed in the SSH addon
+After installation, edit `~/.claude/.env` with your connection details (SSH host, HA URL, Long-Lived Access Token).
 
 ## After installation
 
-Just run `claude` in the SSH terminal. All skills are loaded automatically.
+Run `haos start` to launch Claude with automatic session checks.
 
 ```txt
-~ $ claude
+~ $ haos start
 
 > diagnose why my Zigbee devices are offline
 > create an automation that turns off all lights at midnight
@@ -52,11 +69,11 @@ Claude will automatically check for updates at the start of each session and sug
 curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash
 ```
 
-Your language preference is preserved between updates.
+Your language preference and connection config are preserved between updates.
 
 ## Reinstall
 
-To start fresh (re-select language, etc.):
+To start fresh (change language, re-download files). Your `.env` config is preserved:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/install.sh | bash

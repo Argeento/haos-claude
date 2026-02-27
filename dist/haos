@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENV_FILE="$HOME/.claude/.env"
+
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Error: Config not found at $ENV_FILE" >&2
+  echo "Run the installer: curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/install.sh | bash" >&2
+  exit 1
+fi
+
+source "$ENV_FILE"
+
+usage() {
+  echo "Usage:" >&2
+  echo "  haos start                           Launch Claude with session checks" >&2
+  echo "  haos cmd <command>                   Run command on HAOS via SSH" >&2
+  echo "  haos put <local> <remote>            Copy file to HAOS via SCP" >&2
+  echo "  haos api <METHOD> <ENDPOINT> [BODY]  Call HA Core REST API" >&2
+  echo "" >&2
+  echo "Examples:" >&2
+  echo "  haos start" >&2
+  echo "  haos cmd ha info" >&2
+  echo "  haos cmd cat /config/automations.yaml" >&2
+  echo "  haos put /tmp/automations.yaml /config/automations.yaml" >&2
+  echo "  haos api GET /api/states" >&2
+  echo "  haos api POST /api/services/light/turn_on '{\"entity_id\":\"light.example\"}'" >&2
+  exit 1
+}
+
+[ $# -eq 0 ] && usage
+
+SUBCMD="$1"
+shift
+
+case "$SUBCMD" in
+  cmd)
+    [ $# -eq 0 ] && { echo "Error: haos cmd requires a command" >&2; exit 1; }
+    [ -z "${HAOS_SSH_HOST:-}" ] && { echo "Error: HAOS_SSH_HOST not set in $ENV_FILE" >&2; exit 1; }
+    ssh -o ConnectTimeout=10 \
+        -o BatchMode=yes \
+        -p "${HAOS_SSH_PORT:-22}" \
+        "$HAOS_SSH_HOST" \
+        "$*"
+    ;;
+
+  put)
+    [ $# -ne 2 ] && { echo "Usage: haos put <local_file> <remote_path>" >&2; exit 1; }
+    [ -z "${HAOS_SSH_HOST:-}" ] && { echo "Error: HAOS_SSH_HOST not set in $ENV_FILE" >&2; exit 1; }
+    scp -o ConnectTimeout=10 \
+        -o BatchMode=yes \
+        -P "${HAOS_SSH_PORT:-22}" \
+        "$1" "${HAOS_SSH_HOST}:$2"
+    ;;
+
+  api)
+    [ -z "${HA_URL:-}" ] && { echo "Error: HA_URL not set in $ENV_FILE" >&2; exit 1; }
+    if [ -z "${HA_TOKEN:-}" ]; then
+      echo "Error: HA_TOKEN not set in $ENV_FILE" >&2
+      echo "Create a Long-Lived Access Token in HA UI → Profile → Security → Long-Lived Access Tokens" >&2
+      echo "http://homeassistant:8123/profile/security" >&2
+      exit 1
+    fi
+    METHOD="${1:-GET}"
+    ENDPOINT="${2:-/api/}"
+    BODY="${3:-}"
+    if [ -n "$BODY" ]; then
+      curl -s -X "$METHOD" \
+        -H "Authorization: Bearer $HA_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "$BODY" \
+        "${HA_URL}${ENDPOINT}"
+    else
+      curl -s -X "$METHOD" \
+        -H "Authorization: Bearer $HA_TOKEN" \
+        "${HA_URL}${ENDPOINT}"
+    fi
+    ;;
+
+  start)
+    command -v claude >/dev/null 2>&1 || { echo "Error: Claude Code is not installed" >&2; exit 1; }
+    claude --prompt "Run session start checks as defined in CLAUDE.md"
+    ;;
+
+  *)
+    echo "Error: Unknown subcommand '$SUBCMD'" >&2
+    usage
+    ;;
+esac
