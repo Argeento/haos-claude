@@ -23,6 +23,11 @@
       "Bash(ping *)",
       "Bash(nslookup *)",
       "Bash(curl *)"
+    ],
+    "deny": [
+      "Bash(ha os datadisk wipe*)",
+      "Bash(rm -rf /config*)",
+      "Bash(rm -rf /config/.storage*)"
     ]
   }
 }
