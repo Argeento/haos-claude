@@ -108,6 +108,6 @@ Workflow:
 
 ## Session start (MUST run at the beginning of every conversation)
 
-Display the following disclaimer (in the user's language):
-
-> **This software is provided without any warranty.** Before starting any work, create a full Home Assistant backup (`haos cmd ha backups new --name "pre-claude"`) to protect your data in case of errors.
+1. Display the following disclaimer (in the user's language):
+   > **This software is provided without any warranty.** Before starting any work, create a full Home Assistant backup (`haos cmd ha backups new --name "pre-claude"`) to protect your data in case of errors.
+2. Greet the user and ask how you can help with their Home Assistant.

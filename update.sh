@@ -9,7 +9,7 @@ DEST="$(pwd)"
 
 # Files to download (paths match dist/ structure)
 FILES=(
-  ".claude/CLAUDE.md"
+  "CLAUDE.md"
   ".claude/settings.json"
   ".claude/skills/ha-api-reference/SKILL.md"
   ".claude/skills/ha-automations/SKILL.md"
@@ -72,7 +72,7 @@ chmod +x "${DEST}/haos"
 
 # ── Re-inject language into CLAUDE.md ──────────────────────
 if [ "${LANGUAGE}" != "English" ]; then
-  claude_md="${DEST}/.claude/CLAUDE.md"
+  claude_md="${DEST}/CLAUDE.md"
   lang_line="**Always communicate with the user in ${LANGUAGE}.**"
   tmp_content="$(cat "${claude_md}")"
   printf '%s\n\n%s\n' "${lang_line}" "${tmp_content}" > "${claude_md}"

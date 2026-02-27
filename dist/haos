@@ -119,7 +119,7 @@ case "$SUBCMD" in
 
     printf '\n'
     unset CLAUDECODE
-    claude
+    claude "Display the session start disclaimer as defined in CLAUDE.md"
     ;;
 
   *)
