@@ -13,14 +13,14 @@ fi
 
 source "$ENV_FILE"
 
-# Resolve Python command (python3 or python)
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON=python3
-elif command -v python >/dev/null 2>&1; then
-  PYTHON=python
-else
-  PYTHON=""
-fi
+# Resolve Python command (python3 or python; verify it actually runs)
+PYTHON=""
+for _py in python3 python; do
+  if command -v "$_py" >/dev/null 2>&1 && "$_py" --version >/dev/null 2>&1; then
+    PYTHON="$_py"
+    break
+  fi
+done
 
 usage() {
   echo "Usage:" >&2
