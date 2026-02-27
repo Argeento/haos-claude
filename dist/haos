@@ -81,6 +81,7 @@ case "$SUBCMD" in
 
   start)
     command -v claude >/dev/null 2>&1 || { echo "Error: Claude Code is not installed" >&2; exit 1; }
+    unset CLAUDECODE
     claude --prompt "Run session start checks as defined in CLAUDE.md"
     ;;
 
