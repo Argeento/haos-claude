@@ -27,12 +27,15 @@ You run on the user's PC. Only `./haos` commands are auto-allowed — **never us
 **`jq` and `python` are NOT available on HAOS** — they are local tools. To process API JSON output, use the built-in `--jq` or `--py` flags:
 
 - **`--jq '<filter>'`** — filters JSON with jq (preferred, shorter syntax):
-  ```bash
+
+```bash
   ./haos api GET /api/states --jq '[.[] | {entity_id, state}]'
   ./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light."))]'
-  ```
+```
+
 - **`--py <script>`** — filters JSON with a Python script (for complex processing). The script receives raw JSON on stdin:
-  ```bash
+
+```bash
   # 1. Write the filter script (use the Write tool — no Bash needed)
   # /tmp/filter.py:
   #   import json, sys
@@ -81,6 +84,17 @@ All diagnostic commands: `./haos cmd ha info`, `./haos cmd ha core info`, `./hao
 - **Read single entity**: `./haos api GET /api/states/sensor.example`
 - **Call service**: `./haos api POST /api/services/light/turn_on '{"entity_id":"light.example"}'`
 - **Render template**: `./haos api POST /api/template '{"template":"{{ states(\"sensor.example\") }}"}'`
+
+**NOT available via REST API** (WebSocket-only, returns 404): `/api/config/device_registry/*`, `/api/config/entity_registry/*`, `/api/config/area_registry/*`, `/api/config/config_entries/*`. To list devices/entities, use `/api/states` with `--jq` instead.
+
+### Common patterns
+
+- **List all entities (grouped by domain)**:
+  `./haos api GET /api/states --jq 'group_by(.entity_id | split(".")[0]) | .[] | {domain: .[0].entity_id | split(".")[0], entities: [.[] | {id: .entity_id, name: .attributes.friendly_name, state: .state}]}'`
+- **List entities by domain** (e.g., light):
+  `./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light.")) | {id: .entity_id, name: .attributes.friendly_name, state: .state}]'`
+- **Single entity details**:
+  `./haos api GET /api/states/sensor.example --jq '{state: .state, attributes: .attributes}'`
 
 ### Files and CLI (via SSH)
 
