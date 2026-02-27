@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE="$HOME/.claude/.env"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Error: Config not found at $ENV_FILE" >&2
+  echo "Make sure you're running haos from the directory where you installed haos-claude." >&2
   echo "Run the installer: curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/install.sh | bash" >&2
   exit 1
 fi

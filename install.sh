@@ -5,10 +5,10 @@ set -euo pipefail
 REPO="Argeento/haos-claude"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/dist"
-DEST="$HOME/.claude"
+DEST="$(pwd)"
 
-# Files that go into ~/.claude/
-CLAUDE_FILES=(
+# Files to download (paths match dist/ structure)
+FILES=(
   ".claude/CLAUDE.md"
   ".claude/settings.json"
   ".claude/skills/ha-api-reference/SKILL.md"
@@ -17,11 +17,8 @@ CLAUDE_FILES=(
   ".claude/skills/ha-naming-organization/SKILL.md"
   ".claude/skills/ha-scenes-scripts/SKILL.md"
   ".claude/skills/ha-troubleshooting/SKILL.md"
-)
-
-# Scripts that go into PATH
-BIN_FILES=(
   "haos"
+  "version.txt"
 )
 
 # ── Helpers ────────────────────────────────────────────────
@@ -53,10 +50,8 @@ command -v curl >/dev/null 2>&1 || fail "curl is required but not found."
 command -v ssh  >/dev/null 2>&1 || fail "ssh is required but not found."
 
 # ── Create .env with defaults ─────────────────────────────
-mkdir -p "${DEST}"
-
 if [ -f "${DEST}/.env" ]; then
-  info "Config already exists at ${DEST}/.env — keeping it."
+  info "Config already exists at .env — keeping it."
 else
   cat > "${DEST}/.env" <<'ENVFILE'
 # haos-claude config
@@ -79,7 +74,7 @@ HA_URL="http://homeassistant.local:8123"
 HA_TOKEN="paste-your-token-here"
 ENVFILE
   chmod 600 "${DEST}/.env"
-  ok "Config created at ${DEST}/.env"
+  ok "Config created at .env"
 fi
 
 # ── Download files ─────────────────────────────────────────
@@ -87,31 +82,20 @@ printf '\n'
 info "Downloading files..."
 errors=0
 
-# version.txt → ~/.claude/version.txt
-download "${BASE_URL}/version.txt" "${DEST}/version.txt" "version.txt" || errors=$((errors + 1))
-
-# .claude/* files → ~/.claude/*
-for file in "${CLAUDE_FILES[@]}"; do
-  dest_name="${file#.claude/}"
-  download "${BASE_URL}/${file}" "${DEST}/${dest_name}" "${dest_name}" || errors=$((errors + 1))
-done
-
-# Bin scripts → ~/.claude/ (then symlinked to PATH)
-for file in "${BIN_FILES[@]}"; do
+for file in "${FILES[@]}"; do
   download "${BASE_URL}/${file}" "${DEST}/${file}" "${file}" || errors=$((errors + 1))
 done
 
 [ "${errors}" -gt 0 ] && fail "Failed to download ${errors} file(s). Check your internet connection."
 
-# ── Install wrappers ──────────────────────────────────────
+# ── Make haos executable ─────────────────────────────────
 chmod +x "${DEST}/haos"
-ok "Wrapper installed: ${DEST}/haos"
 
 # ── Inject language into CLAUDE.md ─────────────────────────
 source "${DEST}/.env"
 LANGUAGE="${HAOS_LANGUAGE:-English}"
 if [ "${LANGUAGE}" != "English" ]; then
-  claude_md="${DEST}/CLAUDE.md"
+  claude_md="${DEST}/.claude/CLAUDE.md"
   lang_line="**Always communicate with the user in ${LANGUAGE}.**"
   tmp_content="$(cat "${claude_md}")"
   printf '%s\n\n%s\n' "${lang_line}" "${tmp_content}" > "${claude_md}"
@@ -123,19 +107,18 @@ version="$(cat "${DEST}/version.txt")"
 printf '\n'
 printf '  \033[1;32m✓ Installation complete!\033[0m (v%s)\n' "${version}"
 printf '\n'
-printf '  Location:  %s\n' "${DEST}"
-printf '  Config:    %s/.env\n' "${DEST}"
+printf '  Config:  .env\n'
 
 # ── Next steps ────────────────────────────────────────────
 printf '\n'
 printf '  \033[1mNext steps:\033[0m\n'
 printf '\n'
-printf '  1. Edit \033[1m%s/.env\033[0m with your settings:\n' "${DEST}"
+printf '  1. Edit \033[1m.env\033[0m with your settings:\n'
 printf '     - Language, SSH host and port\n'
 printf '     - Home Assistant URL\n'
 printf '     - Long-Lived Access Token (HA UI → Profile → Security)\n'
 printf '\n'
-printf '  2. Run \033[38;2;217;119;6mhaos start\033[0m to launch Claude\n'
+printf '  2. Run \033[38;2;217;119;6m./haos start\033[0m to launch Claude\n'
 
 if ! command -v claude >/dev/null 2>&1; then
   printf '\n'

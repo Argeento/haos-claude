@@ -5,10 +5,10 @@ set -euo pipefail
 REPO="Argeento/haos-claude"
 BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}/dist"
-DEST="$HOME/.claude"
+DEST="$(pwd)"
 
-# Files that go into ~/.claude/
-CLAUDE_FILES=(
+# Files to download (paths match dist/ structure)
+FILES=(
   ".claude/CLAUDE.md"
   ".claude/settings.json"
   ".claude/skills/ha-api-reference/SKILL.md"
@@ -17,11 +17,8 @@ CLAUDE_FILES=(
   ".claude/skills/ha-naming-organization/SKILL.md"
   ".claude/skills/ha-scenes-scripts/SKILL.md"
   ".claude/skills/ha-troubleshooting/SKILL.md"
-)
-
-# Scripts that go into PATH
-BIN_FILES=(
   "haos"
+  "version.txt"
 )
 
 # ── Helpers ────────────────────────────────────────────────
@@ -52,7 +49,7 @@ printf '\n'
 command -v curl >/dev/null 2>&1 || fail "curl is required but not found."
 
 if [ ! -f "${DEST}/.env" ]; then
-  fail "Config not found at ${DEST}/.env. Run the installer first."
+  fail "Config not found at .env. Run the installer first (from this directory)."
 fi
 
 # ── Read language from .env ────────────────────────────────
@@ -64,28 +61,18 @@ info "Language: ${LANGUAGE}"
 info "Downloading files..."
 errors=0
 
-# version.txt → ~/.claude/version.txt
-download "${BASE_URL}/version.txt" "${DEST}/version.txt" "version.txt" || errors=$((errors + 1))
-
-# .claude/* files → ~/.claude/*
-for file in "${CLAUDE_FILES[@]}"; do
-  dest_name="${file#.claude/}"
-  download "${BASE_URL}/${file}" "${DEST}/${dest_name}" "${dest_name}" || errors=$((errors + 1))
-done
-
-# Bin scripts → ~/.claude/
-for file in "${BIN_FILES[@]}"; do
+for file in "${FILES[@]}"; do
   download "${BASE_URL}/${file}" "${DEST}/${file}" "${file}" || errors=$((errors + 1))
 done
 
 [ "${errors}" -gt 0 ] && fail "Failed to download ${errors} file(s). Check your internet connection."
 
-# ── Install wrappers ──────────────────────────────────────
+# ── Make haos executable ─────────────────────────────────
 chmod +x "${DEST}/haos"
 
 # ── Re-inject language into CLAUDE.md ──────────────────────
 if [ "${LANGUAGE}" != "English" ]; then
-  claude_md="${DEST}/CLAUDE.md"
+  claude_md="${DEST}/.claude/CLAUDE.md"
   lang_line="**Always communicate with the user in ${LANGUAGE}.**"
   tmp_content="$(cat "${claude_md}")"
   printf '%s\n\n%s\n' "${lang_line}" "${tmp_content}" > "${claude_md}"

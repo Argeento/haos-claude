@@ -25,7 +25,7 @@ A single wrapper script handles all communication with Home Assistant:
 - **`haos put <local> <remote>`** — uploads a local file to HAOS via SSH
 - **`haos api <METHOD> <ENDPOINT> [BODY]`** — calls the HA Core REST API over HTTP (e.g., `haos api GET /api/states`)
 
-Config (SSH host, HA URL, token) is stored in `~/.claude/.env`.
+Config (SSH host, HA URL, token) is stored in `.env` inside your project folder.
 
 ## Requirements
 
@@ -35,26 +35,31 @@ Config (SSH host, HA URL, token) is stored in `~/.claude/.env`.
 
 ## Install
 
-Run on your **local PC** (not on HAOS):
+Create a folder for your project and run the installer from there (on your **local PC**, not on HAOS):
 
 ```bash
+mkdir my-ha && cd my-ha
 curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/install.sh | bash
 ```
 
-The installer will:
+The installer will download all files into the current folder:
 
-1. Ask what language Claude should use
-2. Download all files to `~/.claude/`
-3. Create a config file at `~/.claude/.env` with default values
+```txt
+my-ha/
+├── .claude/          # Claude Code config, skills
+├── .env              # your connection settings
+├── haos              # CLI wrapper
+└── version.txt
+```
 
-After installation, edit `~/.claude/.env` with your connection details (SSH host, HA URL, Long-Lived Access Token).
+After installation, edit `.env` with your connection details (SSH host, HA URL, Long-Lived Access Token).
 
 ## After installation
 
-Run `haos start` to launch Claude with automatic session checks.
+From your project folder, run `haos start` to launch Claude with automatic session checks.
 
 ```txt
-~ $ haos start
+~/my-ha $ ./haos start
 
 > diagnose why my Zigbee devices are offline
 > create an automation that turns off all lights at midnight
@@ -66,6 +71,7 @@ Run `haos start` to launch Claude with automatic session checks.
 Claude will automatically check for updates at the start of each session and suggest updating when a new version is available. You can also update manually:
 
 ```bash
+cd my-ha
 curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash
 ```
 
@@ -73,8 +79,9 @@ Your language preference and connection config are preserved between updates.
 
 ## Reinstall
 
-To start fresh (change language, re-download files). Your `.env` config is preserved:
+To start fresh (change language, re-download files), run from your project folder. Your `.env` config is preserved:
 
 ```bash
+cd my-ha
 curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/install.sh | bash
 ```
