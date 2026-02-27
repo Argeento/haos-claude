@@ -373,10 +373,10 @@ Solution: Use `!include` for separate files, or packages for thematic grouping. 
 
 ### General best practices checklist
 
-- `haos cmd ha core check` BEFORE every restart
+- `./haos cmd ha core check` BEFORE every restart
 - `mode: restart` on automations with delay/wait
 - Trigger-based templates > state-based (fewer calculations)
 - Limit `recorder` to needed entities on SD card / low disk space
-- Regular backup: `haos cmd ha backups new --name "weekly-$(date +%Y%m%d)"`
+- Regular backup: `./haos cmd ha backups new --name "weekly-$(date +%Y%m%d)"`
 - Don't expose everything to voice assistant — only what you actually use
 - Areas correctly assigned — Assist targets by area

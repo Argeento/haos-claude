@@ -172,11 +172,11 @@ Local variables for reuse:
 
 ### Step 7: Validate and deploy
 
-1. Before saving — **always validate** YAML: `haos cmd ha core check`
+1. Before saving — **always validate** YAML: `./haos cmd ha core check`
 2. After editing `automations.yaml` — **reload**:
-   - `haos cmd ha core restart` (full restart) or
-   - Via API: `haos api POST /api/services/automation/reload` (faster, no Core restart)
-3. Before major changes — **backup**: `haos cmd ha backups new --name "before-changes"`
+   - `./haos cmd ha core restart` (full restart) or
+   - Via API: `./haos api POST /api/services/automation/reload` (faster, no Core restart)
+3. Before major changes — **backup**: `./haos cmd ha backups new --name "before-changes"`
 
 ## Examples
 

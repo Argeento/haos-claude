@@ -1,11 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(haos *)"
+      "Bash(./haos *)"
     ],
     "deny": [
-      "Bash(haos cmd ha os datadisk wipe*)",
-      "Bash(haos cmd rm -rf /config*)"
+      "Bash(./haos cmd ha os datadisk wipe*)",
+      "Bash(./haos cmd rm -rf /config*)"
     ]
   }
 }
