@@ -210,6 +210,19 @@ case "$SUBCMD" in
       exit 1
     fi
 
+    # WebSocket check
+    printf '  Checking WebSocket...  '
+    if command -v python3 >/dev/null 2>&1; then
+      if PYTHONUTF8=1 python3 "${SCRIPT_DIR}/ha_ws.py" "$HA_URL" "$HA_TOKEN" "get_config" >/dev/null 2>&1; then
+        printf '\033[1;32mOK\033[0m\n'
+      else
+        printf '\033[1;31mFAILED\033[0m\n'
+        echo "  WebSocket connection failed. Check HA_URL and HA_TOKEN." >&2
+      fi
+    else
+      printf '\033[1;33mSKIPPED\033[0m — Python 3 required for WebSocket\n'
+    fi
+
     # Tool checks (non-blocking)
     printf '  Checking jq... '
     if command -v jq >/dev/null 2>&1; then
