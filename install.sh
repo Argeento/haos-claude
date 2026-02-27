@@ -105,23 +105,7 @@ done
 
 # ── Install wrappers ──────────────────────────────────────
 chmod +x "${DEST}/haos"
-
-# Try to symlink to a directory in PATH
-BIN_DIR=""
-for dir in "$HOME/.local/bin" "/usr/local/bin"; do
-  if [ -d "${dir}" ] && echo "$PATH" | grep -q "${dir}"; then
-    BIN_DIR="${dir}"
-    break
-  fi
-done
-
-if [ -z "${BIN_DIR}" ]; then
-  mkdir -p "$HOME/.local/bin"
-  BIN_DIR="$HOME/.local/bin"
-fi
-
-ln -sf "${DEST}/haos" "${BIN_DIR}/haos" 2>/dev/null || true
-ok "Wrapper installed: haos → ${BIN_DIR}"
+ok "Wrapper installed: ${DEST}/haos"
 
 # ── Inject language into CLAUDE.md ─────────────────────────
 source "${DEST}/.env"

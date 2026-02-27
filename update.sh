@@ -83,18 +83,6 @@ done
 # ── Install wrappers ──────────────────────────────────────
 chmod +x "${DEST}/haos"
 
-BIN_DIR=""
-for dir in "$HOME/.local/bin" "/usr/local/bin"; do
-  if [ -d "${dir}" ] && echo "$PATH" | grep -q "${dir}"; then
-    BIN_DIR="${dir}"
-    break
-  fi
-done
-
-if [ -n "${BIN_DIR}" ]; then
-  ln -sf "${DEST}/haos" "${BIN_DIR}/haos" 2>/dev/null || true
-fi
-
 # ── Re-inject language into CLAUDE.md ──────────────────────
 if [ "${LANGUAGE}" != "English" ]; then
   claude_md="${DEST}/CLAUDE.md"
