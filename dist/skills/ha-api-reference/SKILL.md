@@ -39,10 +39,10 @@ Available endpoints:
 
 ### HA Core REST API
 
-Requires a Long-Lived Access Token (LLAT) — generated in UI → Profile → Tokens.
+Use the `ha-api` wrapper — it handles authentication automatically via `~/.claude/.ha-token`.
 
 ```bash
-curl -H "Authorization: Bearer <LLAT>" http://<HA_IP>:8123/api/<endpoint>
+ha-api <METHOD> <ENDPOINT> [JSON_BODY]
 ```
 
 Available endpoints:
@@ -63,51 +63,43 @@ Available endpoints:
 
 ## Examples
 
-### Get all entity states via Supervisor proxy
+### Get all entity states
 
 ```bash
-curl -sSL -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
-  http://supervisor/core/api/states
+ha-api GET /api/states
 ```
 
-### Call a service via Supervisor proxy
+### Call a service
 
 ```bash
-curl -sSL -X POST \
-  -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"entity_id": "light.living_room_ceiling"}' \
-  http://supervisor/core/api/services/light/turn_on
+ha-api POST /api/services/light/turn_on '{"entity_id": "light.living_room_ceiling"}'
 ```
 
-### Get a single entity state via Core REST API
+### Get a single entity state
 
 ```bash
-curl -H "Authorization: Bearer <LLAT>" \
-  http://<HA_IP>:8123/api/states/sensor.living_room_temperature
+ha-api GET /api/states/sensor.living_room_temperature
 ```
 
-### Render a Jinja2 template via Core REST API
+### Render a Jinja2 template
 
 ```bash
-curl -X POST \
-  -H "Authorization: Bearer <LLAT>" \
-  -H "Content-Type: application/json" \
-  -d '{"template": "{{ states(\"sensor.living_room_temperature\") }}"}' \
-  http://<HA_IP>:8123/api/template
+ha-api POST /api/template '{"template": "{{ states(\"sensor.living_room_temperature\") }}"}'
 ```
 
 ## Troubleshooting
 
-### "401 Unauthorized" from Supervisor API
+### "401 Unauthorized" or token error from `ha-api`
+
+Cause: Missing, invalid, or expired Long-Lived Access Token (LLAT).
+Solution: Generate a new LLAT in HA UI → Profile → Security → Long-Lived Access Tokens. Save it: `echo "YOUR_TOKEN" > ~/.claude/.ha-token`
+
+Note: `$SUPERVISOR_TOKEN` does NOT work with the Core REST API. The `ha-api` wrapper uses LLAT from `~/.claude/.ha-token`.
+
+### "401 Unauthorized" from Supervisor endpoints (`/supervisor/*`, `/os/*`)
 
 Cause: Missing or invalid `$SUPERVISOR_TOKEN`.
 Solution: The token is automatically injected by the addon environment. Verify with `echo $SUPERVISOR_TOKEN`. If empty, the addon may not have proper Supervisor access configured.
-
-### "401 Unauthorized" from Core REST API
-
-Cause: Missing or expired Long-Lived Access Token (LLAT).
-Solution: Generate a new LLAT in the HA UI → Profile → Long-Lived Access Tokens. Never expose or log the token.
 
 ### Supervisor API returns "502 Bad Gateway"
 

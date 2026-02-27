@@ -18,11 +18,14 @@
       "Bash(ha addons)",
       "Bash(ha addons info*)",
       "Bash(ha addons logs*)",
+      "Bash(ha-api *)",
       "Bash(cat *)",
+      "Bash(jq *)",
+      "Bash(grep *)",
       "Bash(du *)",
       "Bash(ping *)",
       "Bash(nslookup *)",
-      "Bash(curl *:*)"
+      "Bash(curl *)"
     ],
     "deny": [
       "Bash(ha os datadisk wipe*)",

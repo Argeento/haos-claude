@@ -7,7 +7,7 @@ You are inside the **SSH addon container** (Alpine Linux) on HAOS — NOT the ba
 - **Container**: Alpine Linux, `root` (container root, not host root)
 - **Available**: `ha` CLI, `apk` (lost on restart), `jq`, `curl`, `cat`, `/config`, `/share`, `/media`, `/backup`, `/ssl`
 - **NOT available**: `python3`, `python`, `docker`, host filesystem, Buildroot
-- **Core REST API is NOT accessible** from the SSH addon (`$SUPERVISOR_TOKEN` works only with the Supervisor API at `http://supervisor/`). Do NOT attempt `curl http://supervisor/core/api/*` — it returns 401.
+- **Core REST API** via `ha-api` wrapper (token managed internally) — check at session start (see below)
 
 ### Container → Host path mapping
 
@@ -36,7 +36,7 @@ HAOS runs Docker containers (Supervisor, Core on port 8123, DNS on 172.30.32.3, 
 - `ha os datadisk wipe` — factory reset, erases EVERYTHING
 - `rm -rf /config/` or `rm -rf /config/.storage/` — irreversible data loss
 - Editing `home-assistant_v2.db` or any file in `.storage/`
-- Exposing `secrets.yaml` contents or tokens (`$SUPERVISOR_TOKEN`, LLAT)
+- Exposing `secrets.yaml` contents, tokens (`$SUPERVISOR_TOKEN`, `~/.claude/.ha-token`), or running raw `curl` with API tokens
 
 ## Requires user confirmation
 
@@ -54,18 +54,24 @@ All `ha` diagnostic commands (`ha info`, `ha core info`, `ha core logs`, `ha cor
 
 ## How to access HA data
 
-The SSH addon cannot call the Core REST API (401). Use these methods instead:
+Use the `ha-api` wrapper for all Core REST API calls. It handles authentication automatically — never use raw curl with tokens.
 
-- **Devices**: `cat /config/.storage/core.device_registry | jq`
-- **Entities**: `cat /config/.storage/core.entity_registry | jq`
-- **Areas**: `cat /config/.storage/core.area_registry | jq`
+Usage: `ha-api <METHOD> <ENDPOINT> [JSON_BODY]`
+
+- **Read states**: `ha-api GET /api/states`
+- **Read single entity**: `ha-api GET /api/states/sensor.example`
+- **Call service**: `ha-api POST /api/services/light/turn_on '{"entity_id":"light.example"}'`
+- **Render template**: `ha-api POST /api/template '{"template":"{{ states(\"sensor.example\") }}"}'`
 - **Automations**: `cat /config/automations.yaml`
 - **Scenes**: `cat /config/scenes.yaml`
 - **Scripts**: `cat /config/scripts.yaml`
 - **Addons**: `ha addons`
 - **System info**: `ha info`, `ha core info`, `ha os info`, `ha host info`
 
-The `.storage/` files are JSON and read-only — NEVER edit them manually.
+**IMPORTANT**: if possible do NOT use pipes (`|`) in commands — they trigger permission prompts. Use tools directly with file arguments:
+
+- `jq '.data' file` instead of `cat file | jq '.data'`
+- `grep pattern file` instead of `cat file | grep pattern`
 
 ## Things that will bite you
 
@@ -85,9 +91,9 @@ The `.storage/` files are JSON and read-only — NEVER edit them manually.
 5. Log commands — state what you're running before you run it
 6. If you don't know — say so directly instead of guessing
 
-## Version check (MUST run at session start)
+## Session start (MUST run at the beginning of every conversation)
 
-At the beginning of every new conversation, silently check for updates:
+### 1. Version check
 
 1. Read local version: `cat ~/.claude/version.txt`
 2. Fetch remote version: `curl -fsSL https://raw.githubusercontent.com/Argeento/haos-claude/main/dist/version.txt`
@@ -95,6 +101,16 @@ At the beginning of every new conversation, silently check for updates:
 4. If the user agrees — run the update command yourself: `curl -sL https://raw.githubusercontent.com/Argeento/haos-claude/main/update.sh | bash`
 5. If they match or the check fails (no internet) — say nothing, continue normally.
 
-After the version check, display the following disclaimer (in the user's language):
+### 2. Core API check
+
+Run: `ha-api GET /api/`
+
+- If it returns `{"message": "API running."}` — ready to work.
+- If it shows an error about missing token — **stop and tell the user** they must create a token first: go to **HA UI → Profile → Security → Long-Lived Access Tokens → Create Token**, then run: `echo "YOUR_TOKEN" > ~/.claude/.ha-token`
+- If it returns 401 — token is invalid or expired. Tell the user to generate a new one.
+
+### 3. Disclaimer
+
+Display the following (in the user's language):
 
 > **This software is provided without any warranty.** Before starting any work, create a full Home Assistant backup (`ha backups new --name "pre-claude"`) to protect your data in case of errors.

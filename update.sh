@@ -11,6 +11,7 @@ FILES=(
   "version.txt"
   "settings.json"
   "CLAUDE.md"
+  "ha-api"
   "skills/ha-api-reference/SKILL.md"
   "skills/ha-automations/SKILL.md"
   "skills/ha-cli-reference/SKILL.md"
@@ -65,6 +66,10 @@ for file in "${FILES[@]}"; do
 done
 
 [ "${errors}" -gt 0 ] && fail "Failed to download ${errors} file(s). Check your internet connection."
+
+# ── Install ha-api wrapper ────────────────────────────────
+chmod +x "${DEST}/ha-api"
+ln -sf "${DEST}/ha-api" /usr/local/bin/ha-api 2>/dev/null || true
 
 # ── Re-inject language into CLAUDE.md ──────────────────────
 if [ "${LANGUAGE}" != "English" ]; then

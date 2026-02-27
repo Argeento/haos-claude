@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TOKEN_FILE="$HOME/.claude/.ha-token"
+HA_URL="http://homeassistant:8123"
+
+if [ ! -f "$TOKEN_FILE" ]; then
+  echo "Error: No API token found. Create one in HA UI → Profile → Security → Long-Lived Access Tokens, then run:" >&2
+  echo "  echo \"YOUR_TOKEN\" > $TOKEN_FILE" >&2
+  exit 1
+fi
+
+TOKEN="$(cat "$TOKEN_FILE")"
+METHOD="${1:-GET}"
+ENDPOINT="${2:-/api/}"
+BODY="${3:-}"
+
+shift 2 2>/dev/null || true
+shift 1 2>/dev/null || true
+
+if [ -n "$BODY" ]; then
+  curl -s -X "$METHOD" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$BODY" \
+    "${HA_URL}${ENDPOINT}"
+else
+  curl -s -X "$METHOD" \
+    -H "Authorization: Bearer $TOKEN" \
+    "${HA_URL}${ENDPOINT}"
+fi

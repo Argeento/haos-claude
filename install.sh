@@ -13,6 +13,7 @@ FILES=(
   "version.txt"
   "settings.json"
   "CLAUDE.md"
+  "ha-api"
   "skills/ha-api-reference/SKILL.md"
   "skills/ha-automations/SKILL.md"
   "skills/ha-cli-reference/SKILL.md"
@@ -74,6 +75,11 @@ done
 
 [ "${errors}" -gt 0 ] && fail "Failed to download ${errors} file(s). Check your internet connection."
 
+# ── Install ha-api wrapper ────────────────────────────────
+chmod +x "${DEST}/ha-api"
+ln -sf "$(pwd)/${DEST}/ha-api" /usr/local/bin/ha-api 2>/dev/null || true
+ok "ha-api wrapper installed"
+
 # ── Save language preference ───────────────────────────────
 printf '%s\n' "${LANGUAGE}" > "${DEST}/.haos-language"
 
@@ -92,6 +98,13 @@ printf '  \033[1;32m✓ Installation complete!\033[0m\n'
 printf '\n'
 printf '  Location:  %s\n' "${DEST}"
 printf '  Language:  %s\n' "${LANGUAGE}"
+
+# ── Tip: enable API access ────────────────────────────────
+printf '\n'
+info "For full functionality (entity management, service calls),"
+info "create a Long-Lived Access Token in HA UI:"
+printf '  Profile → Security → Long-Lived Access Tokens → Create Token\n'
+printf '  Then run: echo "YOUR_TOKEN" > ~/.claude/.ha-token\n'
 
 # ── Check if Claude Code is installed ──────────────────────
 if command -v claude >/dev/null 2>&1; then
