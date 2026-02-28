@@ -16,6 +16,7 @@ FILES=(
   ".claude/skills/ha-cli-reference/SKILL.md"
   ".claude/skills/ha-naming-organization/SKILL.md"
   ".claude/skills/ha-scenes-scripts/SKILL.md"
+  ".claude/skills/ha-system-review/SKILL.md"
   ".claude/skills/ha-troubleshooting/SKILL.md"
   "haos"
   "ha_ws.py"
