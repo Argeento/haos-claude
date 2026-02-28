@@ -45,7 +45,34 @@ Device names — changing the device name propagates to entities:
 - Name the **device** by location: "Living Room Ceiling", "Bathroom Motion Sensor"
 - Entities will automatically get sensible entity_ids: `light.living_room_ceiling`, `binary_sensor.bathroom_motion_sensor_motion`
 
-### Step 3: Name automations, scripts, and scenes consistently
+### Step 3: Rename entities and devices via API
+
+Both `entity_id` and `friendly_name` can be changed through the entity registry API:
+
+```bash
+# Change entity_id
+./haos ws config/entity_registry/update '{"entity_id":"sensor.temp1","new_entity_id":"sensor.living_room_temperature"}'
+
+# Change friendly_name (displayed in UI)
+./haos ws config/entity_registry/update '{"entity_id":"sensor.living_room_temperature","name":"Living Room Temperature"}'
+
+# Change both at once
+./haos ws config/entity_registry/update '{"entity_id":"sensor.temp1","new_entity_id":"sensor.living_room_temperature","name":"Living Room Temperature"}'
+```
+
+To rename a device (propagates to its entities):
+
+```bash
+./haos ws config/device_registry/update '{"device_id":"abc123","name_by_user":"Living Room Ceiling"}'
+```
+
+**Batch renaming workflow:**
+
+1. List entities to rename: `./haos ws config/entity_registry/list --jq '[.[] | select(.entity_id | startswith("sensor.")) | {entity_id, name, device_id}]'`
+2. Rename each entity with `config/entity_registry/update`
+3. Verify: `./haos ws config/entity_registry/get '{"entity_id":"sensor.new_name"}'`
+
+### Step 4: Name automations, scripts, and scenes consistently
 
 Automations — alias format: `Location — Action description`
 
@@ -169,7 +196,7 @@ System
 Multimedia
 ```
 
-### Step 5: Choose a configuration file organization method
+### Step 6: Choose a configuration file organization method
 
 **Method 1: Simple !include** (recommended to start)
 
@@ -272,7 +299,7 @@ Advantages of packages:
 - Easy to transfer between installations
 - Clear thematic organization
 
-### Step 6: Manage secrets properly
+### Step 7: Manage secrets properly
 
 ```yaml
 # secrets.yaml
@@ -349,7 +376,7 @@ Template sensor rules:
 ### Entity names are inconsistent or hard to find
 
 Cause: No naming convention applied.
-Solution: Follow the `<domain>.<location>_<device>_<function>` pattern. Rename devices first — entity_ids will propagate automatically.
+Solution: Follow the `<domain>.<location>_<device>_<function>` pattern. Rename entity_ids via `config/entity_registry/update` with `new_entity_id` (see Step 3). Alternatively, rename the device with `config/device_registry/update` — new entities will inherit the device name.
 
 ### Automations missing debug traces in UI
 
