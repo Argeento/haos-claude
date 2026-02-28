@@ -71,6 +71,11 @@ To rename a device (propagates to its entities):
 1. List entities to rename: `./haos ws config/entity_registry/list --jq '[.[] | select(.entity_id | startswith("sensor.")) | {entity_id, name, device_id}]'`
 2. Rename each entity with `config/entity_registry/update`
 3. Verify: `./haos ws config/entity_registry/get '{"entity_id":"sensor.new_name"}'`
+4. **Update all references** — changing `entity_id` does NOT auto-update:
+   - **Dashboards**: `./haos cmd cat /config/.storage/lovelace_resources` and `./haos cmd cat /config/.storage/lovelace.lovelace_*` — search for old entity_ids
+   - **Automations**: `./haos cmd cat /config/automations.yaml` — search and replace old entity_ids
+   - **Scripts/Scenes**: `./haos cmd cat /config/scripts.yaml`, `./haos cmd cat /config/scenes.yaml`
+   - Build a mapping of old→new entity_ids BEFORE renaming, then use it to update all references after
 
 ### Step 4: Name automations, scripts, and scenes consistently
 
@@ -377,6 +382,11 @@ Template sensor rules:
 
 Cause: No naming convention applied.
 Solution: Follow the `<domain>.<location>_<device>_<function>` pattern. Rename entity_ids via `config/entity_registry/update` with `new_entity_id` (see Step 3). Alternatively, rename the device with `config/device_registry/update` — new entities will inherit the device name.
+
+### Dashboards/automations broken after renaming entity_ids
+
+Cause: Changing `entity_id` via `config/entity_registry/update` does NOT auto-update references in dashboards, automations, scripts, or scenes.
+Solution: After renaming, search and update all references (see Step 3, point 4). Always build an old→new mapping before batch renaming so you can find-and-replace across all YAML files and dashboard configs.
 
 ### Automations missing debug traces in UI
 
