@@ -1,13 +1,15 @@
 ---
 name: ha-system-review
-description: Performs a comprehensive review and audit of a Home Assistant installation — checks naming conventions, area assignments, automation best practices, configuration hygiene, and system health. Use when user asks to "review my system", "audit HA", "check best practices", "what can I improve", "review entities", "check my setup", or any task involving evaluating the quality of an existing HA configuration.
+description: Performs a comprehensive audit of a Home Assistant installation — checks naming conventions, area assignments, automation best practices, configuration hygiene, and system health. Use when user asks to "review my system", "audit HA", "check best practices", "what can I improve", "review entities", "check my setup", or any task involving evaluating the quality of an existing HA configuration.
 ---
 
 # Home Assistant System Review
 
+CRITICAL: This skill contains a complete step-by-step audit procedure. Execute the steps directly — do NOT enter plan mode or create your own plan. Follow the steps below in order.
+
 ## Instructions
 
-When asked to review the system, go through each section below in order. For each section, collect data, analyze it, and report findings grouped by severity:
+Go through each section below in order. For each section, collect data, analyze it, and report findings grouped by severity:
 
 - **Problem** — breaks functionality, causes errors, or is a security risk
 - **Warning** — works but violates best practices, will cause issues later
@@ -45,7 +47,7 @@ Fetch all entities and check naming conventions:
 
 Check for:
 
-- **Naming pattern** — entity_ids should follow `<domain>.<location>_<device>_<function>` (e.g., `sensor.living_room_temperature`, not `sensor.temp1`)
+- **Naming pattern** — entity_ids should follow `domain.location_device_function` (e.g., `sensor.living_room_temperature`, not `sensor.temp1`)
 - **Consistency** — all entities use the same naming convention, not a mix of styles
 - **Domain repeated in name** — `light.living_room_ceiling_light` should be `light.living_room_ceiling`
 - **Uppercase or special characters** in entity_id — should be lowercase + underscores only
@@ -180,7 +182,9 @@ Check for:
 - **Orphaned entities** — entities from integrations that no longer exist
 - **Duplicate integrations** — same device added twice
 
-## Report format
+## Examples
+
+### Example report output
 
 Present findings as a structured report:
 
@@ -222,11 +226,7 @@ Present findings as a structured report:
 
 Adapt the report structure to what you actually find — skip sections where everything is OK (just note "✅ All good"), focus on sections with issues.
 
-## Troubleshooting
-
-### Too many entities to review manually
-
-Use `--jq` filters to find problems automatically:
+### Useful jq filters for large installations
 
 ```bash
 # Entities with default names (contain hex addresses or numbers)
@@ -240,6 +240,8 @@ Use `--jq` filters to find problems automatically:
 ./haos cmd grep -c "^- alias:" /config/automations.yaml
 # If counts differ → some automations lack id
 ```
+
+## Troubleshooting
 
 ### User asks to fix issues found during review
 
