@@ -253,6 +253,14 @@ case "$SUBCMD" in
       exit 1
     fi
 
+    # Inject Python command info into CLAUDE.md
+    claude_md="${SCRIPT_DIR}/CLAUDE.md"
+    python_line="**Python on this system is available as \`${PYTHON}\`.**"
+    if ! grep -qF "$python_line" "$claude_md" 2>/dev/null; then
+      tmp_content="$(cat "$claude_md")"
+      printf '%s\n\n%s\n' "$python_line" "$tmp_content" > "$claude_md"
+    fi
+
     printf '\n'
     export PYTHONUTF8=1
     unset CLAUDECODE
