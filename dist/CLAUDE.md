@@ -25,7 +25,7 @@ The SSH addon container runs Alpine Linux with the `ha` CLI, `jq`, `curl`, and `
 
 You run on the user's PC. Only `./haos` commands are auto-allowed — **never use shell pipes (`|`) or redirects (`>`)** as they will be blocked by permissions.
 
-**Temporary files** (Python scripts, YAML configs, etc.) — always save to `./tmp/` (local, next to `haos`). Never use system `/tmp/` or other global paths.
+**Temporary files** (Python scripts, YAML configs, etc.) — always save to `./tmp/` (local, next to `haos`). Never use system `/tmp/` or other global paths. Scripts in `./tmp/` are OK for data processing (e.g., `--py ./tmp/filter.py`), but **NEVER write scripts that call `./haos` via subprocess** — it breaks on Windows and bypasses permissions. For batch operations (e.g., renaming 50 entities), call `./haos` commands sequentially using the Bash tool.
 
 **`jq` and `python` are NOT available on HAOS** — they are local tools. To process API JSON output, use the built-in `--jq` or `--py` flags:
 
