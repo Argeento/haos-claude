@@ -143,7 +143,7 @@ History supports query params: `?filter_entity_id=sensor.x&end_time=...&minimal_
 | Task | Command |
 |------|---------|
 | Read YAML file | `./haos cmd cat /config/<file>.yaml` |
-| Write YAML file | `./haos put /tmp/<file>.yaml /config/<file>.yaml` |
+| Write YAML file | `./haos put ./tmp/<file>.yaml /config/<file>.yaml` |
 | Reload automations | `./haos api POST /api/services/automation/reload` |
 | Reload scenes | `./haos api POST /api/services/scene/reload` |
 | Reload scripts | `./haos api POST /api/services/script/reload` |

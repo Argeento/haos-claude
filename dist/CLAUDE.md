@@ -9,7 +9,7 @@ You are running **locally** on the user's PC, connected to Home Assistant OS (HA
 One wrapper handles all communication:
 
 - **`./haos cmd <command>`** — runs any command on HAOS via SSH (e.g., `./haos cmd ha info`, `./haos cmd cat /config/automations.yaml`)
-- **`./haos put <local> <remote>`** — copies a local file to HAOS via SCP (e.g., `./haos put /tmp/automations.yaml /config/automations.yaml`)
+- **`./haos put <local> <remote>`** — copies a local file to HAOS via SCP (e.g., `./haos put ./tmp/automations.yaml /config/automations.yaml`)
 - **`./haos api <METHOD> <ENDPOINT> [BODY]`** — calls HA Core REST API over HTTP (e.g., `./haos api GET /api/states`)
 - **`./haos ws <TYPE> [JSON_DATA]`** — calls HA WebSocket API (e.g., `./haos ws config/device_registry/list`)
 
@@ -25,6 +25,8 @@ The SSH addon container runs Alpine Linux with the `ha` CLI, `jq`, `curl`, and `
 
 You run on the user's PC. Only `./haos` commands are auto-allowed — **never use shell pipes (`|`) or redirects (`>`)** as they will be blocked by permissions.
 
+**Temporary files** (Python scripts, YAML configs, etc.) — always save to `./tmp/` (local, next to `haos`). Never use system `/tmp/` or other global paths.
+
 **`jq` and `python` are NOT available on HAOS** — they are local tools. To process API JSON output, use the built-in `--jq` or `--py` flags:
 
 - **`--jq '<filter>'`** — filters JSON with jq (preferred, shorter syntax):
@@ -38,14 +40,14 @@ You run on the user's PC. Only `./haos` commands are auto-allowed — **never us
 
 ```bash
   # 1. Write the filter script (use the Write tool — no Bash needed)
-  # /tmp/filter.py:
+  # ./tmp/filter.py:
   #   import json, sys
   #   data = json.load(sys.stdin)
   #   for e in data:
   #       print(f"{e['entity_id']}: {e['state']}")
   #
   # 2. Run:
-  ./haos api GET /api/states --py /tmp/filter.py
+  ./haos api GET /api/states --py ./tmp/filter.py
   ```
 
 Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient.
@@ -112,14 +114,14 @@ To write files on the remote HAOS system, save locally first, then copy via SCP:
 ```bash
 # 1. Write the new content to a local temp file
 # 2. Copy to HAOS
-./haos put /tmp/automations.yaml /config/automations.yaml
+./haos put ./tmp/automations.yaml /config/automations.yaml
 ```
 
 Workflow:
 
 1. Read: `./haos cmd cat /config/automations.yaml`
-2. Prepare new content and save to a local temp file (e.g., `/tmp/automations.yaml`)
-3. Write: `./haos put /tmp/automations.yaml /config/automations.yaml`
+2. Prepare new content and save to a local temp file (e.g., `./tmp/automations.yaml`)
+3. Write: `./haos put ./tmp/automations.yaml /config/automations.yaml`
 4. Validate: `./haos cmd ha core check`
 5. Apply — prefer reload over restart:
    - **Automations**: `./haos api POST /api/services/automation/reload`

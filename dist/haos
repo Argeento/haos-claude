@@ -261,6 +261,10 @@ case "$SUBCMD" in
       printf '%s\n\n%s\n' "$python_line" "$tmp_content" > "$claude_md"
     fi
 
+    # Clean and recreate tmp directory
+    rm -rf "${SCRIPT_DIR}/tmp"
+    mkdir -p "${SCRIPT_DIR}/tmp"
+
     printf '\n'
     export PYTHONUTF8=1
     unset CLAUDECODE

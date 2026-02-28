@@ -92,6 +92,9 @@ done
 # ── Make haos executable ─────────────────────────────────
 chmod +x "${DEST}/haos"
 
+# ── Create tmp directory for temp files ──────────────────
+mkdir -p "${DEST}/tmp"
+
 # ── Inject language into CLAUDE.md ─────────────────────────
 source "${DEST}/.env"
 LANGUAGE="${HAOS_LANGUAGE:-English}"
