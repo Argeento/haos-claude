@@ -83,62 +83,9 @@ All diagnostic commands: `./haos cmd ha info`, `./haos cmd ha core info`, `./hao
 
 ## How to access HA data
 
-Use `./haos api` for states, services, templates, history. Use `./haos ws` for registries (devices, entities, areas, floors, labels, categories, integrations). Use `./haos cmd` for CLI diagnostics and reading files. **For the complete reference of all endpoints and parameters, see the `ha-api-reference` skill.**
-
-Common operations:
-
-- **Read states**: `./haos api GET /api/states`
-- **Call service**: `./haos api POST /api/services/light/turn_on '{"entity_id":"light.example"}'`
-- **Render template**: `./haos api POST /api/template '{"template":"{{ states(\"sensor.example\") }}"}'`
-- **List devices**: `./haos ws config/device_registry/list`
-- **List entities (registry)**: `./haos ws config/entity_registry/list`
-- **List areas**: `./haos ws config/area_registry/list`
-- **System info**: `./haos cmd ha info`
-- **Read files**: `./haos cmd cat /config/automations.yaml`
+Use `./haos api` for states, services, templates, history. Use `./haos ws` for registries (devices, entities, areas, floors, labels, categories, integrations). Use `./haos cmd` for CLI diagnostics and reading files. For the complete reference of all endpoints, parameters, jq patterns, and file editing workflow — see the `ha-api-reference` skill. For CLI commands — see `ha-cli-reference`.
 
 When a task is truly impossible via any API, **tell the user** what to do in the HA UI. Do NOT attempt workarounds (pip install, raw curl to internal APIs, etc.).
-
-### Common jq patterns
-
-- **List all entities (grouped by domain)**:
-  `./haos api GET /api/states --jq 'group_by(.entity_id | split(".")[0]) | .[] | {domain: .[0].entity_id | split(".")[0], entities: [.[] | {id: .entity_id, name: .attributes.friendly_name, state: .state}]}'`
-- **List entities by domain** (e.g., light):
-  `./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light.")) | {id: .entity_id, name: .attributes.friendly_name, state: .state}]'`
-- **Single entity details**:
-  `./haos api GET /api/states/sensor.example --jq '{state: .state, attributes: .attributes}'`
-
-## Editing files on HAOS
-
-To write files on the remote HAOS system, save locally first, then copy via SCP:
-
-```bash
-# 1. Write the new content to a local temp file
-# 2. Copy to HAOS
-./haos put ./tmp/automations.yaml /config/automations.yaml
-```
-
-Workflow:
-
-1. Read: `./haos cmd cat /config/automations.yaml`
-2. Prepare new content and save to a local temp file (e.g., `./tmp/automations.yaml`)
-3. Write: `./haos put ./tmp/automations.yaml /config/automations.yaml`
-4. Validate: `./haos cmd ha core check`
-5. Apply — prefer reload over restart:
-   - **Automations**: `./haos api POST /api/services/automation/reload`
-   - **Scenes**: `./haos api POST /api/services/scene/reload`
-   - **Scripts**: `./haos api POST /api/services/script/reload`
-   - **Groups**: `./haos api POST /api/services/group/reload`
-   - **Input helpers**: `./haos api POST /api/services/input_boolean/reload` (same for input_number, input_select, etc.)
-   - **Full Core restart** (`./haos cmd ha core restart`) — only if reload is not sufficient (e.g., changes to `configuration.yaml`, new integrations)
-
-## Things that will bite you
-
-- MUST run `./haos cmd ha core check` before every `./haos cmd ha core restart`
-- MUST create backup before updates: `./haos cmd ha backups new --name "before-update"`
-- Stopping DNS addon (AdGuard/Pi-hole) kills name resolution system-wide
-- Stopping MQTT broker breaks all MQTT-dependent addons
-- Network config changes risk locking you out — always have a plan B
-- If SSH hangs, check connectivity: `./haos cmd echo ok`
 
 ## Work principles
 
