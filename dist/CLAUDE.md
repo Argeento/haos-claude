@@ -81,48 +81,22 @@ All diagnostic commands: `./haos cmd ha info`, `./haos cmd ha core info`, `./hao
 
 ## How to access HA data
 
-### REST API (read + write)
+Use `./haos api` for states, services, templates, history. Use `./haos ws` for registries (devices, entities, areas, floors, labels, categories, integrations). Use `./haos cmd` for CLI diagnostics and reading files. **For the complete reference of all endpoints and parameters, see the `ha-api-reference` skill.**
+
+Common operations:
 
 - **Read states**: `./haos api GET /api/states`
-- **Read single entity**: `./haos api GET /api/states/sensor.example`
 - **Call service**: `./haos api POST /api/services/light/turn_on '{"entity_id":"light.example"}'`
 - **Render template**: `./haos api POST /api/template '{"template":"{{ states(\"sensor.example\") }}"}'`
-
-**NOT available via REST API** (returns 404): device/entity/area registries, config entries. Use `./haos ws` for these instead (see WebSocket API below).
-
-### WebSocket API (registries + management)
-
-Use `./haos ws` for operations unavailable via REST. **This is the complete list** — do NOT try other types.
-
-```bash
-./haos ws <TYPE> [JSON_DATA] [--jq FILTER]
-```
-
-Available registries and commands:
-
-- **Device registry**: `config/device_registry/list`, `update` (`device_id`), `remove_config_entry` (`device_id` + `config_entry_id`)
-- **Entity registry**: `config/entity_registry/list`, `get` (`entity_id`), `get_entries` (`entity_ids`), `update` (`entity_id`), `remove` (`entity_id`)
-- **Area registry**: `config/area_registry/list`, `create` (`name`), `delete` (`area_id`), `update` (`area_id`)
-- **Floor registry**: `config/floor_registry/list`, `create` (`name`), `delete` (`floor_id`), `update` (`floor_id`)
-- **Label registry**: `config/label_registry/list`, `create` (`name`), `delete` (`label_id`), `update` (`label_id`)
-- **Category registry**: `config/category_registry/list` (`scope`), `create` (`scope`, `name`), `delete` (`scope`, `category_id`), `update` (`scope`, `category_id`)
-- **Config entries**: `config_entries/get`, `get_single` (`entry_id`), `update` (`entry_id`), `disable` (`entry_id`)
-
-**There is no `remove_device` or `config_entries/delete` WS command.** To delete an integration, use REST: `./haos api DELETE /api/config/config_entries/entry/<entry_id>`
-
-Supports `--jq` filtering: `./haos ws config/device_registry/list --jq '[.[] | {id, name, manufacturer}]'`
-
-### Deleting entities
-
-- **Orphaned entities** (`"restored": true`, unavailable) — `./haos api DELETE /api/states/<entity_id>`
-- **YAML-defined automations** — remove from `automations.yaml`, then reload: `./haos api POST /api/services/automation/reload`
-- **Entity registry entries** — `./haos ws config/entity_registry/remove '{"entity_id":"..."}'`
-- **Devices** — detach integration: `./haos ws config/device_registry/remove_config_entry '{"device_id":"...","config_entry_id":"..."}'`
-- **Integrations** — `./haos api DELETE /api/config/config_entries/entry/<entry_id>`
+- **List devices**: `./haos ws config/device_registry/list`
+- **List entities (registry)**: `./haos ws config/entity_registry/list`
+- **List areas**: `./haos ws config/area_registry/list`
+- **System info**: `./haos cmd ha info`
+- **Read files**: `./haos cmd cat /config/automations.yaml`
 
 When a task is truly impossible via any API, **tell the user** what to do in the HA UI. Do NOT attempt workarounds (pip install, raw curl to internal APIs, etc.).
 
-### Common patterns
+### Common jq patterns
 
 - **List all entities (grouped by domain)**:
   `./haos api GET /api/states --jq 'group_by(.entity_id | split(".")[0]) | .[] | {domain: .[0].entity_id | split(".")[0], entities: [.[] | {id: .entity_id, name: .attributes.friendly_name, state: .state}]}'`
@@ -130,14 +104,6 @@ When a task is truly impossible via any API, **tell the user** what to do in the
   `./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light.")) | {id: .entity_id, name: .attributes.friendly_name, state: .state}]'`
 - **Single entity details**:
   `./haos api GET /api/states/sensor.example --jq '{state: .state, attributes: .attributes}'`
-
-### Files and CLI (via SSH)
-
-- **Automations**: `./haos cmd cat /config/automations.yaml`
-- **Scenes**: `./haos cmd cat /config/scenes.yaml`
-- **Scripts**: `./haos cmd cat /config/scripts.yaml`
-- **Addons**: `./haos cmd ha addons`
-- **System info**: `./haos cmd ha info`, `./haos cmd ha core info`, `./haos cmd ha os info`, `./haos cmd ha host info`
 
 ## Editing files on HAOS
 
