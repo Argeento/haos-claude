@@ -14,6 +14,8 @@ description: Reference for Home Assistant APIs — REST, WebSocket, Supervisor, 
 
 Both `./haos api` and `./haos ws` support `--jq '<filter>'` for JSON filtering and `--py <script>` for complex processing.
 
+**For Lovelace dashboards** (cards, views, sections, resources) see the `ha-dashboards` skill — the WS endpoints (`lovelace/config`, `lovelace/config/save`, `lovelace/dashboards/*`, `lovelace/resources/*`) and the storage-mode constraints are documented there.
+
 **Note:** `./haos ws` sends one command and returns one response. It does NOT support subscriptions (`subscribe_events`, `subscribe_entities`). For `get_states`, `call_service`, `fire_event` — use `./haos api` (REST).
 
 ## Full reference

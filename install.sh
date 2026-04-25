@@ -14,6 +14,7 @@ FILES=(
   ".claude/skills/ha-api-reference/SKILL.md"
   ".claude/skills/ha-automations/SKILL.md"
   ".claude/skills/ha-cli-reference/SKILL.md"
+  ".claude/skills/ha-dashboards/SKILL.md"
   ".claude/skills/ha-naming-organization/SKILL.md"
   ".claude/skills/ha-scenes-scripts/SKILL.md"
   ".claude/skills/ha-system-review/SKILL.md"

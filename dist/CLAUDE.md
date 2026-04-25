@@ -50,7 +50,11 @@ You run on the user's PC. Only `./haos` commands are auto-allowed — **never us
   ./haos api GET /api/states --py ./tmp/filter.py
   ```
 
-Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient.
+Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient. Both flags work with `./haos api` and `./haos ws`.
+
+## Editing Lovelace dashboards
+
+For storage-mode dashboards, **default to editing via the WebSocket API** (`./haos ws lovelace/config` to read, `./haos ws lovelace/config/save` to write). Do NOT hand the user a YAML snippet to paste manually unless they explicitly ask, or the dashboard is YAML-mode (in which case the API rejects saves and you must tell them to edit the YAML file). Never edit `/config/.storage/lovelace*` directly — those files are managed by Core. See the `ha-dashboards` skill for the full workflow, payload formats, and recursive card walking.
 
 ## Critical files on HAOS (/config/)
 
