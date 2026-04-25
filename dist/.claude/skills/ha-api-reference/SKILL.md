@@ -12,7 +12,7 @@ description: Reference for Home Assistant APIs — REST, WebSocket, Supervisor, 
 - **`./haos cmd <command>`** — SSH (CLI diagnostics, reading files)
 - **`./haos put <local> <remote>`** — SCP (copying files to HAOS)
 
-Both `./haos api` and `./haos ws` support `--jq '<filter>'` for JSON filtering. `./haos api` also supports `--py <script>` for complex processing.
+Both `./haos api` and `./haos ws` support `--jq '<filter>'` for JSON filtering and `--py <script>` for complex processing.
 
 **Note:** `./haos ws` sends one command and returns one response. It does NOT support subscriptions (`subscribe_events`, `subscribe_entities`). For `get_states`, `call_service`, `fire_event` — use `./haos api` (REST).
 
