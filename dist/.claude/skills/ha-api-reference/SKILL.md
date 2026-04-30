@@ -12,7 +12,7 @@ description: Reference for Home Assistant APIs — REST, WebSocket, Supervisor, 
 - **`./haos cmd <command>`** — SSH (CLI diagnostics, reading files)
 - **`./haos put <local> <remote>`** — SCP (copying files to HAOS)
 
-Both `./haos api` and `./haos ws` support `--jq '<filter>'` for JSON filtering and `--py <script>` for complex processing.
+Both `./haos api` and `./haos ws` support `--jq '<filter>'` for JSON filtering and `--py <script>` for complex processing. `--py` scripts receive raw JSON on stdin and can read `HA_URL` / `HA_TOKEN` from `os.environ` for follow-up calls (must NOT shell out to `./haos`).
 
 **For Lovelace dashboards** (cards, views, sections, resources) see the `ha-dashboards` skill — the WS endpoints (`lovelace/config`, `lovelace/config/save`, `lovelace/dashboards/*`, `lovelace/resources/*`) and the storage-mode constraints are documented there.
 

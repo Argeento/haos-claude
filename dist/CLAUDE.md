@@ -36,7 +36,7 @@ You run on the user's PC. Only `./haos` commands are auto-allowed — **never us
   ./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light."))]'
 ```
 
-- **`--py <script>`** — filters JSON with a Python script (for complex processing). The script receives raw JSON on stdin:
+- **`--py <script>`** — filters JSON with a Python script (for complex processing). The script receives raw JSON on stdin and has `HA_URL` / `HA_TOKEN` available in `os.environ` (use them when the script needs to make a follow-up REST/WS call directly — recall the rule above: `--py` scripts must NOT shell out to `./haos`):
 
 ```bash
   # 1. Write the filter script (use the Write tool — no Bash needed)
@@ -50,7 +50,7 @@ You run on the user's PC. Only `./haos` commands are auto-allowed — **never us
   ./haos api GET /api/states --py ./tmp/filter.py
   ```
 
-Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient. Both flags work with `./haos api` and `./haos ws`.
+Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient (or when the script needs `HA_URL`/`HA_TOKEN` to make a follow-up call). Both flags work with `./haos api` and `./haos ws`.
 
 ## Editing Lovelace dashboards
 

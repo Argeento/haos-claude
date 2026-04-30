@@ -11,7 +11,7 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
-source "$ENV_FILE"
+set -a; source "$ENV_FILE"; set +a
 
 # Resolve Python command (python3 or python; verify it actually runs)
 PYTHON=""
