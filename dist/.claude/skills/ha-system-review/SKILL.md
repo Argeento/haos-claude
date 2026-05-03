@@ -1,6 +1,6 @@
 ---
 name: ha-system-review
-description: Performs a comprehensive audit of a Home Assistant installation — checks naming conventions, area assignments, automation best practices, configuration hygiene, and system health. Use when user asks to "review my system", "audit HA", "check best practices", "what can I improve", "review entities", "check my setup", or any task involving evaluating the quality of an existing HA configuration.
+description: Comprehensive audit of a Home Assistant installation — naming, areas, automation quality, config hygiene, system health. Use when the user asks to review/audit/check the setup or wants improvement suggestions.
 ---
 
 # Home Assistant System Review

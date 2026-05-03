@@ -1,6 +1,6 @@
 ---
 name: ha-api-reference
-description: Reference for Home Assistant APIs — REST, WebSocket, Supervisor, and CLI. Use when user asks to "call API", "fetch entity states", "call service", "use REST API", "list devices", "manage areas", "fire event", "render template", "check states", "list integrations", or any task involving HA data access.
+description: Home Assistant REST and WebSocket API reference — endpoints, jq/py filters, registry operations. Use for fetching states, calling services, rendering templates, listing devices/entities/areas/integrations, or any HA data access.
 ---
 
 # Home Assistant API Reference

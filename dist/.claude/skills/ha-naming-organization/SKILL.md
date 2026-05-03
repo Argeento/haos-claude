@@ -1,6 +1,6 @@
 ---
 name: ha-naming-organization
-description: Applies Home Assistant naming conventions, entity organization, and configuration best practices. Use when user asks to "name entities", "organize config", "set up areas", "create labels", "structure YAML files", "rename devices", "set up packages", "organize automations", or needs help with HA configuration file structure, secrets management, or template sensors.
+description: Home Assistant naming conventions, entity/area/label organization, and config-file best practices. Use for renaming entities/devices, structuring YAML, setting up areas/labels/packages, secrets management, or template sensors.
 ---
 
 # HA Naming, Organization and Configuration Best Practices

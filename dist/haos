@@ -283,10 +283,37 @@ BANNER
     rm -rf "${SCRIPT_DIR}/tmp"
     mkdir -p "${SCRIPT_DIR}/tmp"
 
-    printf '\n'
+    # Disclaimer in user's language (case-insensitive, fallback: English)
+    case "${HAOS_LANGUAGE:-English}" in
+      [Pp][Oo][Ll]*)
+        DISCLAIMER_WARN="To oprogramowanie jest dostarczane bez żadnej gwarancji."
+        DISCLAIMER_HINT="Przed rozpoczęciem pracy utwórz pełną kopię zapasową:" ;;
+      [Dd][Ee][Uu]*|[Gg][Ee][Rr]*)
+        DISCLAIMER_WARN="Diese Software wird ohne jegliche Garantie bereitgestellt."
+        DISCLAIMER_HINT="Erstelle vor Beginn ein vollständiges Backup:" ;;
+      [Ff][Rr][AaEe]*)
+        DISCLAIMER_WARN="Ce logiciel est fourni sans aucune garantie."
+        DISCLAIMER_HINT="Avant de commencer, créez une sauvegarde complète :" ;;
+      [Ee][Ss][Pp]*|[Ss][Pp][Aa]*)
+        DISCLAIMER_WARN="Este software se proporciona sin ninguna garantía."
+        DISCLAIMER_HINT="Antes de empezar, crea una copia de seguridad completa:" ;;
+      [Ii][Tt][Aa]*)
+        DISCLAIMER_WARN="Questo software è fornito senza alcuna garanzia."
+        DISCLAIMER_HINT="Prima di iniziare, crea un backup completo:" ;;
+      [Pp][Oo][Rr]*)
+        DISCLAIMER_WARN="Este software é fornecido sem qualquer garantia."
+        DISCLAIMER_HINT="Antes de começar, crie um backup completo:" ;;
+      *)
+        DISCLAIMER_WARN="This software is provided without any warranty."
+        DISCLAIMER_HINT="Before starting, create a full backup:" ;;
+    esac
+    printf '\n  \033[1;33m! %s\033[0m\n' "$DISCLAIMER_WARN"
+    printf '  %s\n' "$DISCLAIMER_HINT"
+    printf '  \033[36m./haos cmd ha backups new --name "pre-claude"\033[0m\n\n'
+
     export PYTHONUTF8=1
     unset CLAUDECODE
-    claude "Display the session start disclaimer as defined in CLAUDE.md"
+    claude
     ;;
 
   *)

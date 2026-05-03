@@ -1,6 +1,6 @@
 ---
 name: ha-troubleshooting
-description: Diagnoses and resolves common Home Assistant problems. Use when user reports "HA won't start", "addon not working", "out of disk space", "Supervisor broken", "need to restore backup", "system not responding", "error in logs", or any troubleshooting and emergency recovery task on HAOS.
+description: Diagnose and resolve Home Assistant problems — startup failures, addon errors, disk space, Supervisor issues, backup restoration, log errors, or emergency recovery on HAOS.
 ---
 
 # Home Assistant Troubleshooting

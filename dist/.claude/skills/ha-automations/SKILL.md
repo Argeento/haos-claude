@@ -1,6 +1,6 @@
 ---
 name: ha-automations
-description: Creates and edits Home Assistant automations in YAML using the new syntax (HA 2024.10+). Use when user asks to "create automation", "add automation", "automate lights", "motion trigger", "set up notification", "turn off light after motion", or any task involving HA automation YAML with triggers, conditions, and actions. Covers execution modes, trigger IDs, targeting, templates, and common automation patterns.
+description: Create and edit Home Assistant automations in YAML using the new syntax (HA 2024.10+). Use for any task with triggers, conditions, actions — motion triggers, notifications, time-based logic, execution modes, trigger IDs, templates.
 ---
 
 # Home Assistant Automations

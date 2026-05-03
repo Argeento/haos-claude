@@ -1,6 +1,6 @@
 ---
 name: ha-scenes-scripts
-description: Creates and edits Home Assistant scenes, scripts, and input helpers in YAML. Use when user asks to "create scene", "add script", "set up scene", "make a wakeup routine", "create input helper", "add input_boolean", "add input_number", "snapshot scene", "reusable action", or any task involving HA scenes, scripts with fields/parameters, or input helpers for dashboard control.
+description: Create and edit Home Assistant scenes, scripts, and input helpers (input_boolean, input_number, etc.) in YAML. Use for state snapshots, reusable actions with fields/parameters, or dashboard control helpers.
 ---
 
 # Home Assistant Scenes, Scripts, and Input Helpers

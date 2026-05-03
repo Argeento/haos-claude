@@ -1,107 +1,61 @@
 # CLAUDE.md — Home Assistant OS
 
-You are running **locally** on the user's PC, connected to Home Assistant OS (HAOS) via SSH and HTTP API.
+You are running **locally** on the user's PC, connected to Home Assistant OS (HAOS). Use the `./haos` wrapper for ALL interactions — never raw `ssh`, `scp`, `curl`, or WebSocket scripts.
 
-**You MUST use the `haos` wrapper for ALL interactions with Home Assistant.** Never use raw `ssh`, `scp`, `curl`, or WebSocket scripts — always go through `./haos cmd`, `./haos put`, `./haos api`, or `./haos ws`.
+## The wrapper
 
-## How to interact with HAOS
+- **`./haos cmd <command>`** — SSH (e.g., `./haos cmd ha info`, `./haos cmd cat /config/automations.yaml`)
+- **`./haos put <local> <remote>`** — SCP local file to HAOS
+- **`./haos api <METHOD> <ENDPOINT> [BODY]`** — HA Core REST API
+- **`./haos ws <TYPE> [JSON_DATA]`** — HA WebSocket API
 
-One wrapper handles all communication:
+Both `./haos api` and `./haos ws` accept `--jq '<filter>'` or `--py <script>` for JSON processing — see the `ha-api-reference` skill for syntax. For REST/services/templates/history use `api`; for registries (devices, entities, areas, floors, labels, integrations, lovelace) use `ws`. For CLI details see `ha-cli-reference`; for dashboards see `ha-dashboards`.
 
-- **`./haos cmd <command>`** — runs any command on HAOS via SSH (e.g., `./haos cmd ha info`, `./haos cmd cat /config/automations.yaml`)
-- **`./haos put <local> <remote>`** — copies a local file to HAOS via SCP (e.g., `./haos put ./tmp/automations.yaml /config/automations.yaml`)
-- **`./haos api <METHOD> <ENDPOINT> [BODY]`** — calls HA Core REST API over HTTP (e.g., `./haos api GET /api/states`)
-- **`./haos ws <TYPE> [JSON_DATA]`** — calls HA WebSocket API (e.g., `./haos ws config/device_registry/list`)
+When a task is impossible via any API, tell the user what to do in the HA UI. Do NOT attempt workarounds.
 
-Config is stored in `~/.claude/.env`. **NEVER read or expose this file** — it contains tokens.
+## Local environment
 
-## Architecture
+- Only `./haos` commands are auto-allowed. **No shell pipes (`|`) or redirects (`>`)** — they will be blocked.
+- Temp files go to `./tmp/` (next to `haos`), never `/tmp/` or global paths.
+- **Never write scripts that call `./haos` via subprocess** — breaks on Windows and bypasses permissions. For batch ops, call `./haos` sequentially via the Bash tool.
+- `jq` and `python` are local only — NOT available on HAOS.
+- Config is in `~/.claude/.env`. **Never read or expose it** — it contains tokens.
 
-HAOS runs Docker containers (Supervisor, Core on port 8123, DNS on 172.30.32.3, addons) on a minimal Buildroot host. Host filesystem is read-only (erofs + overlay). All persistent data lives on the `hassos-data` partition (ext4) at `/mnt/data/`. System uses A/B kernel+system slots with RAUC for updates.
+## HAOS facts you may need
 
-The SSH addon container runs Alpine Linux with the `ha` CLI, `jq`, `curl`, and `cat` available. Python is NOT available on HAOS.
+- HAOS is Buildroot host (read-only) running Docker containers (Supervisor, Core on :8123, addons). Persistent data lives at `/mnt/data/`.
+- The SSH addon container is Alpine with `ha`, `jq`, `curl`, `cat`. Python is NOT on HAOS.
 
-## Local environment (your PC)
+## Response style
 
-You run on the user's PC. Only `./haos` commands are auto-allowed — **never use shell pipes (`|`) or redirects (`>`)** as they will be blocked by permissions.
-
-**Temporary files** (Python scripts, YAML configs, etc.) — always save to `./tmp/` (local, next to `haos`). Never use system `/tmp/` or other global paths. Scripts in `./tmp/` are OK for data processing (e.g., `--py ./tmp/filter.py`), but **NEVER write scripts that call `./haos` via subprocess** — it breaks on Windows and bypasses permissions. For batch operations (e.g., renaming 50 entities), call `./haos` commands sequentially using the Bash tool.
-
-**`jq` and `python` are NOT available on HAOS** — they are local tools. To process API JSON output, use the built-in `--jq` or `--py` flags:
-
-- **`--jq '<filter>'`** — filters JSON with jq (preferred, shorter syntax):
-
-```bash
-  ./haos api GET /api/states --jq '[.[] | {entity_id, state}]'
-  ./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light."))]'
-```
-
-- **`--py <script>`** — filters JSON with a Python script (for complex processing). The script receives raw JSON on stdin and has `HA_URL` / `HA_TOKEN` available in `os.environ` (use them when the script needs to make a follow-up REST/WS call directly — recall the rule above: `--py` scripts must NOT shell out to `./haos`):
-
-```bash
-  # 1. Write the filter script (use the Write tool — no Bash needed)
-  # ./tmp/filter.py:
-  #   import json, sys
-  #   data = json.load(sys.stdin)
-  #   for e in data:
-  #       print(f"{e['entity_id']}: {e['state']}")
-  #
-  # 2. Run:
-  ./haos api GET /api/states --py ./tmp/filter.py
-  ```
-
-Prefer `--jq` for simple filters. Use `--py` when jq syntax is insufficient (or when the script needs `HA_URL`/`HA_TOKEN` to make a follow-up call). Both flags work with `./haos api` and `./haos ws`.
-
-## Editing Lovelace dashboards
-
-For storage-mode dashboards, **default to editing via the WebSocket API** (`./haos ws lovelace/config` to read, `./haos ws lovelace/config/save` to write). Do NOT hand the user a YAML snippet to paste manually unless they explicitly ask, or the dashboard is YAML-mode (in which case the API rejects saves and you must tell them to edit the YAML file). Never edit `/config/.storage/lovelace*` directly — those files are managed by Core. See the `ha-dashboards` skill for the full workflow, payload formats, and recursive card walking.
-
-## Critical files on HAOS (/config/)
-
-- `secrets.yaml` — MUST NOT expose or log contents
-- `.storage/` — MUST NOT edit manually (managed by Core, manual edits = corruption)
-- `home-assistant_v2.db` — MUST NOT edit (use the API instead)
-- `configuration.yaml` — main HA config (requires confirmation to edit)
+- Be concise. No preamble, no recap of the user's request, no trailing summary of what you just did.
+- State commands before running them in one short sentence — not paragraphs.
+- For lists (entities, devices, automations) prefer compact tables or one-line items, not bullet-per-attribute breakdowns. Default to ≤20 items unless asked for more.
+- Don't repeat data the user can already see in the previous tool output.
 
 ## FORBIDDEN
 
-- `./haos cmd ha os datadisk wipe` — factory reset, erases EVERYTHING
-- `./haos cmd rm -rf /config/` or `./haos cmd rm -rf /config/.storage/` — irreversible data loss
-- Editing `home-assistant_v2.db` or any file in `.storage/`
-- Exposing `secrets.yaml` contents, `~/.claude/.env`, or any tokens
-- Installing packages on the user's PC (`pip install`, `npm install`, etc.) — NEVER modify the local system
+- `./haos cmd ha os datadisk wipe` — factory reset
+- `./haos cmd rm -rf /config/` or anything under `/config/.storage/` — irreversible
+- Editing `home-assistant_v2.db` or any file in `.storage/` (managed by Core, manual edits = corruption)
+- Exposing `secrets.yaml`, `~/.claude/.env`, or any tokens
+- Installing packages on the user's PC (`pip install`, `npm install`, etc.)
 
 ## Requires user confirmation
 
-- Editing any YAML on HAOS
-- `./haos cmd ha core restart` / `./haos cmd ha core update` / `./haos cmd ha os update`
-- `./haos cmd ha host reboot` / `./haos cmd ha host shutdown`
-- Addon start/stop/restart/install/uninstall
+- Editing any YAML on HAOS or `configuration.yaml`
+- `ha core restart` / `ha core update` / `ha os update` / `ha host reboot` / `ha host shutdown`
+- Addon install/uninstall/start/stop
 - Creating/restoring backups
-- Network configuration changes
-- Deleting entities, devices, or integrations via `./haos ws` (remove/delete operations)
+- Network changes
+- Deleting entities/devices/integrations via `./haos ws`
 
-## Safe (no confirmation needed)
-
-All diagnostic commands: `./haos cmd ha info`, `./haos cmd ha core info`, `./haos cmd ha core logs`, `./haos cmd ha core check`, `./haos cmd ha resolution info`. Reading files via `./haos cmd cat /config/...`. Reading logs. Listing backups. API read operations via `./haos api GET ...`.
-
-## How to access HA data
-
-Use `./haos api` for states, services, templates, history. Use `./haos ws` for registries (devices, entities, areas, floors, labels, categories, integrations). Use `./haos cmd` for CLI diagnostics and reading files. For the complete reference of all endpoints, parameters, jq patterns, and file editing workflow — see the `ha-api-reference` skill. For CLI commands — see `ha-cli-reference`.
-
-When a task is truly impossible via any API, **tell the user** what to do in the HA UI. Do NOT attempt workarounds (pip install, raw curl to internal APIs, etc.).
+Diagnostics, reads, `GET` calls, listing — all safe, no confirmation needed.
 
 ## Work principles
 
-1. Before destructive operations — ask for confirmation + suggest backup
-2. Before editing files — show what you intend to change
-3. Before restarting Core — MUST validate with `./haos cmd ha core check`
-4. Before updates — MUST backup with `./haos cmd ha backups new`
-5. Log commands — state what you're running before you run it
-6. If you don't know — say so directly instead of guessing
-
-## Session start (MUST run at the beginning of every conversation)
-
-1. Display the following disclaimer (in the user's language):
-   > **This software is provided without any warranty.** Before starting any work, create a full Home Assistant backup (`./haos cmd ha backups new --name "pre-claude"`) to protect your data in case of errors.
-2. Greet the user and ask how you can help with their Home Assistant.
+1. Before destructive ops — ask + suggest a backup
+2. Before editing — show the diff/intent
+3. Before `ha core restart` — `./haos cmd ha core check` first
+4. Before updates — `./haos cmd ha backups new` first
+5. If you don't know — say so, don't guess

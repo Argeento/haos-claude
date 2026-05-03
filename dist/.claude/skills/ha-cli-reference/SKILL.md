@@ -1,6 +1,6 @@
 ---
 name: ha-cli-reference
-description: Reference for Home Assistant CLI commands via the ha command-line tool. Use when user asks to "restart HA", "update Core", "check logs", "manage addons", "create backup", "reboot", "check network", "install addon", "update OS", or any task involving ha CLI commands for diagnostics, core management, addon management, backups, system/host/OS, or network configuration.
+description: Reference for the `ha` CLI tool. Use for restarting Core, updates, logs, addon management, backups, host/OS commands, network configuration, or any diagnostics run via SSH.
 ---
 
 # Home Assistant CLI Reference

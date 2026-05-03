@@ -1,6 +1,6 @@
 ---
 name: ha-dashboards
-description: Edit Home Assistant Lovelace dashboards (cards, views, sections, resources) via the WebSocket API. Use when user asks to "edit dashboard", "change a card", "add a card", "modify Lovelace", "rename a view", "rearrange dashboard", "list dashboards", "manage dashboard resources", or any task that touches the Lovelace UI configuration.
+description: Edit Home Assistant Lovelace dashboards via the WebSocket API — cards, views, sections, resources, dashboard list. Use for any task touching the Lovelace UI configuration.
 ---
 
 # Home Assistant Dashboards (Lovelace)
