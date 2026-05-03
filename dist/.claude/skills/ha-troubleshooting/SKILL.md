@@ -16,8 +16,10 @@ Before taking any action, gather diagnostic information:
 ./haos cmd ha supervisor info                    # Is Supervisor healthy?
 ./haos cmd ha host info                          # Disk space? Kernel?
 ./haos cmd ha resolution info                    # Known problems + suggested fixes
-./haos cmd ha core logs | tail -50               # Recent Core errors
+./haos cmd "ha core logs | tail -50"             # Recent Core errors
 ```
+
+**Note:** `|`, `>`, `grep`, `head`, `tail` only work when the whole command is quoted so the pipe runs on HAOS — `./haos cmd "ha core logs | tail -50"`, not `./haos cmd ha core logs | tail -50` (the local pipe is blocked).
 
 ### Step 2: Follow the appropriate procedure below
 
@@ -26,7 +28,7 @@ Before taking any action, gather diagnostic information:
 ### HA won't start after config change
 
 ```bash
-./haos cmd ha core logs | tail -50               # What crashed?
+./haos cmd "ha core logs | tail -50"             # What crashed?
 ./haos cmd ha core check                         # Validate configuration
 ./haos cmd ha core restart --safe-mode           # Restart without custom integrations
 # → fix configuration → ./haos cmd ha core restart
@@ -38,7 +40,7 @@ If safe mode works, the issue is in a custom integration or YAML config. Check l
 
 ```bash
 ./haos cmd ha addons info <slug>                 # Current status, version
-./haos cmd ha addons logs <slug> | tail -50      # Logs — look for errors
+./haos cmd "ha addons logs <slug> | tail -50"    # Logs — look for errors
 ./haos cmd ha addons restart <slug>              # Restart
 ./haos cmd ha addons rebuild <slug>              # Rebuild container (if restart didn't help)
 ```
@@ -48,9 +50,9 @@ If rebuild doesn't help, try uninstall + reinstall (warn user: addon config may 
 ### Out of disk space
 
 ```bash
-./haos cmd du -sh /config/* 2>/dev/null | sort -rh | head -20   # Largest files in config
-./haos cmd du -sh /backup/* 2>/dev/null | sort -rh               # Backup sizes
-./haos cmd ha backups list                                        # Old backups to delete?
+./haos cmd "du -sh /config/* 2>/dev/null | sort -rh | head -20"  # Largest files in config
+./haos cmd "du -sh /backup/* 2>/dev/null | sort -rh"             # Backup sizes
+./haos cmd ha backups list                                       # Old backups to delete?
 ```
 
 Common culprits:
@@ -80,8 +82,9 @@ If Supervisor is completely unresponsive, a host reboot may be needed: `./haos c
 ### Integration or entity unavailable
 
 ```bash
-./haos cmd ha core logs | tail -100              # Check for integration errors
-# Look for "Unable to set up" or "unavailable" messages
+./haos cmd "ha core logs | grep -iE 'unable to set up|unavailable' | tail -50"
+# Or just the last 100 lines:
+./haos cmd "ha core logs | tail -100"
 ```
 
 Common causes:
@@ -93,7 +96,7 @@ Common causes:
 
 ```bash
 ./haos cmd ha dns info                           # DNS config
-./haos cmd ha dns logs | tail -30                # DNS addon logs
+./haos cmd "ha dns logs | tail -30"              # DNS addon logs
 ./haos cmd ping 8.8.8.8                          # Can reach internet by IP?
 ./haos cmd nslookup google.com                   # Can resolve names?
 ```
@@ -105,7 +108,7 @@ If DNS addon (AdGuard/Pi-hole) was stopped, the network loses its resolver. Rest
 ### Problem persists after following the steps above
 
 1. Check `./haos cmd ha resolution info` for system-detected issues and suggested fixes
-2. Review full Core logs: `./haos cmd ha core logs` (not just tail)
+2. Get more log context — `./haos cmd "ha core logs | tail -200"` or grep for the failing component (`./haos cmd "ha core logs | grep -i <component>"`). Avoid the full unfiltered `ha core logs` — it can be megabytes.
 3. Try safe mode: `./haos cmd ha core restart --safe-mode`
 4. As last resort: restore from a known-good backup
 

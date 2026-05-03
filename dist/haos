@@ -27,9 +27,9 @@ usage() {
   echo "  haos start                           Launch Claude with session checks" >&2
   echo "  haos cmd <command>                   Run command on HAOS via SSH" >&2
   echo "  haos put <local> <remote>            Copy file to HAOS via SCP" >&2
-  echo "  haos api <METHOD> <ENDPOINT> [BODY] [--jq FILTER | --py SCRIPT]" >&2
+  echo "  haos api <METHOD> <ENDPOINT> [BODY] [--jq F | --py S] [-o FILE]" >&2
   echo "                                       Call HA Core REST API" >&2
-  echo "  haos ws <TYPE> [JSON_DATA] [--jq FILTER | --py SCRIPT]" >&2
+  echo "  haos ws <TYPE> [JSON_DATA] [--jq F | --py S] [-o FILE]" >&2
   echo "                                       Call HA WebSocket API" >&2
   echo "" >&2
   echo "Examples:" >&2
@@ -37,13 +37,41 @@ usage() {
   echo "  haos cmd ha info" >&2
   echo "  haos cmd cat /config/automations.yaml" >&2
   echo "  haos put /tmp/automations.yaml /config/automations.yaml" >&2
-  echo "  haos api GET /api/states" >&2
   echo "  haos api GET /api/states --jq '[.[] | {entity_id, state}]'" >&2
-  echo "  haos api GET /api/states --py /tmp/filter.py" >&2
+  echo "  haos api GET /api/states -o ./tmp/states.json" >&2
   echo "  haos api POST /api/services/light/turn_on '{\"entity_id\":\"light.example\"}'" >&2
-  echo "  haos ws config/device_registry/list" >&2
-  echo "  haos ws config/entity_registry/remove '{\"entity_id\":\"sensor.old\"}'" >&2
+  echo "  haos ws config/device_registry/list --jq '[.[] | {id, name}]'" >&2
+  echo "  haos ws lovelace/config '{\"url_path\":\"home\"}' -o ./tmp/dash.json" >&2
   exit 1
+}
+
+# Filter response (jq/py/passthrough) and write to file or stdout.
+# Args: 1=raw response, 2=jq filter, 3=py script, 4=output file
+emit() {
+  local resp="$1" jq_f="$2" py_s="$3" out="$4"
+  if [ -n "$out" ]; then
+    mkdir -p "$(dirname "$out")"
+    {
+      if [ -n "$jq_f" ]; then
+        printf '%s' "$resp" | jq "$jq_f"
+      elif [ -n "$py_s" ]; then
+        printf '%s' "$resp" | PYTHONUTF8=1 $PYTHON "$py_s"
+      else
+        printf '%s' "$resp"
+      fi
+    } > "$out"
+    local size
+    size=$(wc -c < "$out" | tr -d ' ')
+    printf 'Wrote %s bytes to %s\n' "$size" "$out" >&2
+  else
+    if [ -n "$jq_f" ]; then
+      printf '%s' "$resp" | jq "$jq_f"
+    elif [ -n "$py_s" ]; then
+      printf '%s' "$resp" | PYTHONUTF8=1 $PYTHON "$py_s"
+    else
+      printf '%s' "$resp"
+    fi
+  fi
 }
 
 [ $# -eq 0 ] && usage
@@ -80,12 +108,13 @@ case "$SUBCMD" in
       exit 1
     fi
 
-    # Parse positional args and optional --jq / --py flags
-    METHOD="" ENDPOINT="" BODY="" JQ_FILTER="" PY_SCRIPT=""
+    # Parse positional args and optional --jq / --py / -o flags
+    METHOD="" ENDPOINT="" BODY="" JQ_FILTER="" PY_SCRIPT="" OUT_FILE=""
     while [ $# -gt 0 ]; do
       case "$1" in
         --jq) JQ_FILTER="$2"; shift 2 ;;
         --py) PY_SCRIPT="$2"; shift 2 ;;
+        -o|--out) OUT_FILE="$2"; shift 2 ;;
         *)
           if [ -z "$METHOD" ]; then METHOD="$1"
           elif [ -z "$ENDPOINT" ]; then ENDPOINT="$1"
@@ -110,26 +139,20 @@ case "$SUBCMD" in
         "${HA_URL}${ENDPOINT}")"
     fi
 
-    # Output: apply --jq, --py, or raw
-    if [ -n "$JQ_FILTER" ]; then
-      printf '%s' "$RESPONSE" | jq "$JQ_FILTER"
-    elif [ -n "$PY_SCRIPT" ]; then
-      printf '%s' "$RESPONSE" | PYTHONUTF8=1 $PYTHON "$PY_SCRIPT"
-    else
-      printf '%s' "$RESPONSE"
-    fi
+    emit "$RESPONSE" "$JQ_FILTER" "$PY_SCRIPT" "$OUT_FILE"
     ;;
 
   ws)
     [ -z "${HA_URL:-}" ] && { echo "Error: HA_URL not set in $ENV_FILE" >&2; exit 1; }
     [ -z "${HA_TOKEN:-}" ] && { echo "Error: HA_TOKEN not set in $ENV_FILE" >&2; exit 1; }
-    [ $# -eq 0 ] && { echo "Usage: haos ws <type> [json_data] [--jq FILTER | --py SCRIPT]" >&2; exit 1; }
+    [ $# -eq 0 ] && { echo "Usage: haos ws <type> [json_data] [--jq F | --py S] [-o FILE]" >&2; exit 1; }
 
-    WS_TYPE="" WS_DATA="" JQ_FILTER="" PY_SCRIPT=""
+    WS_TYPE="" WS_DATA="" JQ_FILTER="" PY_SCRIPT="" OUT_FILE=""
     while [ $# -gt 0 ]; do
       case "$1" in
         --jq) JQ_FILTER="$2"; shift 2 ;;
         --py) PY_SCRIPT="$2"; shift 2 ;;
+        -o|--out) OUT_FILE="$2"; shift 2 ;;
         *)
           if [ -z "$WS_TYPE" ]; then WS_TYPE="$1"
           else WS_DATA="$1"
@@ -144,13 +167,7 @@ case "$SUBCMD" in
       RESPONSE="$(PYTHONUTF8=1 $PYTHON "${SCRIPT_DIR}/ha_ws.py" "$HA_URL" "$HA_TOKEN" "$WS_TYPE")"
     fi
 
-    if [ -n "$JQ_FILTER" ]; then
-      printf '%s' "$RESPONSE" | jq "$JQ_FILTER"
-    elif [ -n "$PY_SCRIPT" ]; then
-      printf '%s' "$RESPONSE" | PYTHONUTF8=1 $PYTHON "$PY_SCRIPT"
-    else
-      printf '%s' "$RESPONSE"
-    fi
+    emit "$RESPONSE" "$JQ_FILTER" "$PY_SCRIPT" "$OUT_FILE"
     ;;
 
   start)

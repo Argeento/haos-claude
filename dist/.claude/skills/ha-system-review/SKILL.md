@@ -92,6 +92,14 @@ Check for:
 ./haos cmd cat /config/automations.yaml
 ```
 
+For large installations, prefer extracting just the structural fields (`id`, `alias`, `mode`) instead of pulling the whole file into context:
+
+```bash
+./haos cmd "grep -nE '^[[:space:]]*(- )?(id|alias|mode):' /config/automations.yaml"
+```
+
+Only `cat` the full file when you need to inspect bodies of specific automations.
+
 Check each automation for:
 
 | Check | Problem | Fix |
@@ -136,10 +144,10 @@ Check for:
 - **Unused includes** — files referenced by `!include` that are empty or don't exist
 
 ```bash
-./haos cmd cat /config/secrets.yaml 2>/dev/null | wc -l
+./haos cmd "test -f /config/secrets.yaml && echo present || echo missing"
 ```
 
-Only check if secrets.yaml exists and is being used — **NEVER read or display its contents**.
+Only check if secrets.yaml exists — **NEVER read or display its contents**. If you need a line count, do `./haos cmd "wc -l /config/secrets.yaml"` (count only, never the body).
 
 ### Step 8: Template sensors
 
@@ -171,7 +179,7 @@ Check for:
 ### Step 10: Integrations and devices
 
 ```bash
-./haos ws config/integration/list
+./haos ws config_entries/get --jq '[.[] | {entry_id, domain, title, state, disabled_by}]'
 ./haos ws config/device_registry/list --jq '[.[] | select(.disabled_by != null) | {id, name, disabled_by}]'
 ./haos ws config/entity_registry/list --jq '[.[] | select(.disabled_by != null) | {entity_id, disabled_by}]'
 ```

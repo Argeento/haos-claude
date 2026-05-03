@@ -131,29 +131,19 @@ for v_idx, view in enumerate(dashboard.get("views", [])):
 
 **Default approach for any dashboard edit — do this, do NOT hand the user YAML to paste manually unless they ask.**
 
-1. **Read current config** to a local file:
+1. **Read current config** to a local file (use `-o`, NOT `>` — local redirects are blocked):
 
 ```bash
-./haos ws lovelace/config '{"url_path":"home"}' > ./tmp/dashboard.json
+./haos ws lovelace/config '{"url_path":"home"}' -o ./tmp/dashboard.json
 ```
 
-2. **Modify** with a Python script that loads the JSON, finds the target card/view/section, mutates it, and writes back:
+2. **Modify** with the Write tool or a Python script that loads `./tmp/dashboard.json`, finds the target card/view/section, mutates it, and writes back to `./tmp/dashboard.new.json`.
 
-```bash
-# ./tmp/edit.py reads dashboard.json, modifies it, writes ./tmp/dashboard.new.json
-./haos cmd : # no-op; just modify locally
+3. **Build the save payload** (wraps the config under a `config` key with `url_path`) — write the payload directly to `./tmp/payload.json` with the Write tool (or a `--py` script). Structure:
+
+```json
+{"url_path": "home", "config": { ... full dashboard config ... }}
 ```
-
-3. **Build the save payload** (wraps the config under a `config` key with `url_path`):
-
-```python
-import json
-config = json.load(open("./tmp/dashboard.new.json"))
-payload = {"url_path": "home", "config": config}
-print(json.dumps(payload))
-```
-
-Save the payload to `./tmp/payload.json`.
 
 4. **Save**:
 
@@ -161,7 +151,9 @@ Save the payload to `./tmp/payload.json`.
 ./haos ws lovelace/config/save "$(cat ./tmp/payload.json)"
 ```
 
-5. **Verify** by re-reading and diffing.
+If the payload is too large for a command-line argument (Windows limit ~32 KB), use `--py` to load the file and call the WS API directly using `HA_URL` / `HA_TOKEN` from `os.environ`.
+
+5. **Verify** by re-reading (`./haos ws lovelace/config '{"url_path":"home"}' -o ./tmp/after.json`) and diffing.
 
 If `lovelace/config/save` returns a validation error, the new config is rejected and the live dashboard is unchanged — fix the payload and retry.
 
@@ -196,12 +188,13 @@ If `lovelace/config/save` returns a validation error, the new config is rejected
 Read → mutate locally → save:
 
 ```bash
-# 1. Read
-./haos ws lovelace/config '{"url_path":"home"}' > ./tmp/d.json
+# 1. Read into a file (use -o, not >)
+./haos ws lovelace/config '{"url_path":"home"}' -o ./tmp/d.json
 
-# 2. Edit ./tmp/d.json with a Python script (append a card to views[0].sections[0].cards)
+# 2. Edit ./tmp/d.json (append a card to views[0].sections[0].cards) and write
+#    the full payload {"url_path":"home","config":{...}} to ./tmp/payload.json
 
-# 3. Build payload and save
+# 3. Save
 ./haos ws lovelace/config/save "$(cat ./tmp/payload.json)"
 ```
 

@@ -107,16 +107,18 @@ The `--raw-json` flag returns JSON instead of a table — useful for parsing.
 ./haos cmd ha core check                         # Validate config
 ./haos cmd ha resolution info                    # Known problems
 ./haos cmd ha host info                          # Disk space
-./haos cmd ha core logs | tail -50               # Recent Core logs
+./haos cmd "ha core logs | tail -50"             # Recent Core logs (pipe runs on HAOS)
 ```
+
+**Note:** local `|` pipes are blocked by permissions. Quote the whole command so the pipe runs on HAOS: `./haos cmd "ha core logs | tail -50"`, not `./haos cmd ha core logs | tail -50`. Same for `grep`, `head`, `wc`.
 
 ### Safe addon restart workflow
 
 ```bash
 ./haos cmd ha addons info <slug>                 # Check current status
-./haos cmd ha addons logs <slug> | tail -30      # Check logs first
+./haos cmd "ha addons logs <slug> | tail -30"    # Check logs first
 ./haos cmd ha addons restart <slug>              # Restart
-./haos cmd ha addons logs <slug> | tail -10      # Verify it started
+./haos cmd "ha addons logs <slug> | tail -10"    # Verify it started
 ```
 
 ### Safe update workflow
@@ -124,7 +126,7 @@ The `--raw-json` flag returns JSON instead of a table — useful for parsing.
 ```bash
 ./haos cmd ha backups new --name "before-update" # Backup first
 ./haos cmd ha core update                        # Then update
-./haos cmd ha core logs | tail -30               # Check for errors
+./haos cmd "ha core logs | tail -30"             # Check for errors
 ```
 
 ## Troubleshooting

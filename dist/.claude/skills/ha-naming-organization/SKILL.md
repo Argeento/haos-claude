@@ -72,7 +72,7 @@ To rename a device (propagates to its entities):
 2. Rename each entity with `config/entity_registry/update`
 3. Verify: `./haos ws config/entity_registry/get '{"entity_id":"sensor.new_name"}'`
 4. **Update all references** — changing `entity_id` does NOT auto-update:
-   - **Dashboards**: `./haos cmd cat /config/.storage/lovelace_resources` and `./haos cmd cat /config/.storage/lovelace.lovelace_*` — search for old entity_ids
+   - **Dashboards**: read each storage-mode dashboard via `./haos ws lovelace/config '{"url_path":"<slug>"}' -o ./tmp/<slug>.json`, search for old entity_ids in the JSON, mutate, save back via `lovelace/config/save` (see `ha-dashboards` skill). **Do NOT cat `/config/.storage/lovelace*` directly** — those files are managed by Core and may be out of sync with memory.
    - **Automations**: `./haos cmd cat /config/automations.yaml` — search and replace old entity_ids
    - **Scripts/Scenes**: `./haos cmd cat /config/scripts.yaml`, `./haos cmd cat /config/scenes.yaml`
    - Build a mapping of old→new entity_ids BEFORE renaming, then use it to update all references after

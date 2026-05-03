@@ -12,11 +12,26 @@ description: Home Assistant REST and WebSocket API reference — endpoints, jq/p
 - **`./haos cmd <command>`** — SSH (CLI diagnostics, reading files)
 - **`./haos put <local> <remote>`** — SCP (copying files to HAOS)
 
-Both `./haos api` and `./haos ws` support `--jq '<filter>'` for JSON filtering and `--py <script>` for complex processing. `--py` scripts receive raw JSON on stdin and can read `HA_URL` / `HA_TOKEN` from `os.environ` for follow-up calls (must NOT shell out to `./haos`).
+Both `./haos api` and `./haos ws` support:
+
+- `--jq '<filter>'` — JSON filtering (preferred for projecting fields)
+- `--py <script>` — Python script on stdin (for complex processing; can read `HA_URL`/`HA_TOKEN` from `os.environ` for follow-up calls; must NOT shell out to `./haos`)
+- `-o <file>` — write output to file instead of stdout (use this instead of `>`, which is blocked by permissions)
 
 **For Lovelace dashboards** (cards, views, sections, resources) see the `ha-dashboards` skill — the WS endpoints (`lovelace/config`, `lovelace/config/save`, `lovelace/dashboards/*`, `lovelace/resources/*`) and the storage-mode constraints are documented there.
 
 **Note:** `./haos ws` sends one command and returns one response. It does NOT support subscriptions (`subscribe_events`, `subscribe_entities`). For `get_states`, `call_service`, `fire_event` — use `./haos api` (REST).
+
+## Output efficiency (read this before list calls)
+
+List endpoints can return huge payloads — `/api/states` on a typical install is hundreds of KB, `lovelace/config` for a busy dashboard is similar. Loading those raw into the conversation wastes tokens and slows everything down. Defaults:
+
+- **Always project fields with `--jq`** when listing. Pull only what you need: `./haos api GET /api/states --jq '[.[] | {entity_id, state}]'` instead of the full state objects with attributes/context/timestamps.
+- **Use `select()` to narrow rows** before projecting: `--jq '[.[] | select(.entity_id | startswith("light.")) | {entity_id, state}]'`.
+- **Save big payloads to a file with `-o`** when you need to inspect or mutate them locally (dashboard configs, full registries). Then read with the Read tool only what you need: `./haos ws lovelace/config '{"url_path":"home"}' -o ./tmp/dash.json`.
+- **For logs**, never run unfiltered `ha core logs` — it can be megabytes. Quote the pipe to run it on HAOS: `./haos cmd "ha core logs | tail -100"` or `./haos cmd "ha core logs | grep -i error | tail -50"`.
+- **For history/logbook**, use `?minimal_response&filter_entity_id=...` query params and bound the time window — those endpoints multiply rows by time.
+- **Pipes/redirects**: any `|`, `>`, `head`, `tail`, `grep`, `wc` only work when wrapped inside a quoted `./haos cmd "..."` (executes on HAOS) or via `-o` for output capture. Local `|` / `>` are blocked.
 
 ## Full reference
 
@@ -220,10 +235,22 @@ History supports query params: `?filter_entity_id=sensor.x&end_time=...&minimal_
 ./haos ws config_entries/disable '{"entry_id":"abc123","disabled_by":"user"}'
 ```
 
-### Get all entity states
+### Get all entity states (compact)
 
 ```bash
-./haos api GET /api/states
+./haos api GET /api/states --jq '[.[] | {entity_id, state}]'
+```
+
+For just one domain:
+
+```bash
+./haos api GET /api/states --jq '[.[] | select(.entity_id | startswith("light.")) | {entity_id, state}]'
+```
+
+For full raw states (only when you genuinely need attributes/context — save to a file):
+
+```bash
+./haos api GET /api/states -o ./tmp/states.json
 ```
 
 ### Call a service
