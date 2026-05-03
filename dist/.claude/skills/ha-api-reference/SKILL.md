@@ -26,12 +26,47 @@ Both `./haos api` and `./haos ws` support:
 
 List endpoints can return huge payloads — `/api/states` on a typical install is hundreds of KB, `lovelace/config` for a busy dashboard is similar. Loading those raw into the conversation wastes tokens and slows everything down. Defaults:
 
-- **Always project fields with `--jq`** when listing. Pull only what you need: `./haos api GET /api/states --jq '[.[] | {entity_id, state}]'` instead of the full state objects with attributes/context/timestamps.
-- **Use `select()` to narrow rows** before projecting: `--jq '[.[] | select(.entity_id | startswith("light.")) | {entity_id, state}]'`.
+- **Always combine `select()` with a `{...}` projection** — narrow rows AND fields. The canonical pattern is `[.[] | select(<filter>) | {<fields>}]`. Both halves matter — `select` alone still returns full objects with all 15+ fields per row.
 - **Save big payloads to a file with `-o`** when you need to inspect or mutate them locally (dashboard configs, full registries). Then read with the Read tool only what you need: `./haos ws lovelace/config '{"url_path":"home"}' -o ./tmp/dash.json`.
 - **For logs**, never run unfiltered `ha core logs` — it can be megabytes. Quote the pipe to run it on HAOS: `./haos cmd "ha core logs | tail -100"` or `./haos cmd "ha core logs | grep -i error | tail -50"`.
 - **For history/logbook**, use `?minimal_response&filter_entity_id=...` query params and bound the time window — those endpoints multiply rows by time.
 - **Pipes/redirects**: any `|`, `>`, `head`, `tail`, `grep`, `wc` only work when wrapped inside a quoted `./haos cmd "..."` (executes on HAOS) or via `-o` for output capture. Local `|` / `>` are blocked.
+
+### Common projections
+
+When listing these endpoints, default to these field sets unless the user asks for something specific:
+
+| Endpoint | Compact projection |
+|---|---|
+| `/api/states` | `{entity_id, state}` (add `last_changed` if relevant) |
+| `config/entity_registry/list` | `{entity_id, name, area_id, device_id, disabled_by, platform}` |
+| `config/device_registry/list` | `{id, name, name_by_user, area_id, manufacturer, model, disabled_by}` |
+| `config/area_registry/list` | `{area_id, name, floor_id, labels}` |
+| `config/floor_registry/list` | `{floor_id, name, level}` |
+| `config/label_registry/list` | `{label_id, name, color}` |
+| `config_entries/get` | `{entry_id, domain, title, state, disabled_by}` |
+| `lovelace/dashboards/list` | `{url_path, title, mode, icon}` |
+| `lovelace/resources` | `{resource_id, type, url}` |
+
+Example combining filter + projection:
+
+```bash
+./haos ws config/entity_registry/list --jq '[.[] | select(.entity_id | test("furtka")) | {entity_id, name, area_id, disabled_by}]'
+```
+
+### Schema discovery (when unsure what fields exist)
+
+If an endpoint isn't in the table above or you're not sure what fields a row has, peek at one element instead of dumping the whole list:
+
+```bash
+# List of field names only:
+./haos ws <endpoint> --jq '.[0] | keys'
+
+# Or one full sample row:
+./haos ws <endpoint> --jq '.[0]'
+```
+
+That's a few hundred bytes vs. potentially hundreds of KB for the full list. Once you know the schema, run the real query with a `select() | {...}` projection.
 
 ## Full reference
 

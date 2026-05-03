@@ -9,7 +9,9 @@ You are running **locally** on the user's PC, connected to Home Assistant OS (HA
 - **`./haos api <METHOD> <ENDPOINT> [BODY]`** — HA Core REST API
 - **`./haos ws <TYPE> [JSON_DATA]`** — HA WebSocket API
 
-Both `./haos api` and `./haos ws` accept `--jq '<filter>'` or `--py <script>` for JSON processing — see the `ha-api-reference` skill for syntax. For REST/services/templates/history use `api`; for registries (devices, entities, areas, floors, labels, integrations, lovelace) use `ws`. For CLI details see `ha-cli-reference`; for dashboards see `ha-dashboards`.
+Both `./haos api` and `./haos ws` accept `--jq '<filter>'`, `--py <script>`, or `-o <file>` — see the `ha-api-reference` skill for syntax. For REST/services/templates/history use `api`; for registries (devices, entities, areas, floors, labels, integrations, lovelace) use `ws`. For CLI details see `ha-cli-reference`; for dashboards see `ha-dashboards`.
+
+**For list/state queries**: always pair `select()` with a field projection — `--jq '[.[] | select(<filter>) | {field1, field2}]'`. `select()` alone keeps full objects (15+ fields per row). See `ha-api-reference` for canonical projections per endpoint and `--jq '.[0] | keys'` for schema discovery.
 
 When a task is impossible via any API, tell the user what to do in the HA UI. Do NOT attempt workarounds.
 
