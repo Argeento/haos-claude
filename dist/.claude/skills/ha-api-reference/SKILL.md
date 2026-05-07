@@ -54,6 +54,24 @@ Example combining filter + projection:
 ./haos ws config/entity_registry/list --jq '[.[] | select(.entity_id | test("furtka")) | {entity_id, name, area_id, disabled_by}]'
 ```
 
+### Regex in `test()` — escaping gotcha
+
+jq string literals only accept a small set of escape sequences (`\n`, `\t`, `\\`, `\"`, …). `\.` is **not** valid and crashes with `Invalid escape … '"\."'`. The wrapper also strips one level of backslashes when forwarding `--jq` on Windows, so naive `\\.` often arrives at jq as `\.` and dies.
+
+Rules of thumb for entity-id filters:
+
+- **Prefer `startswith` / `endswith` / `contains` over regex** — no escaping needed:
+  ```bash
+  --jq '[.[] | select(.entity_id | startswith("binary_sensor.satel_"))]'
+  ```
+- **If you need regex, use `[.]` instead of `\.`** for a literal dot:
+  ```bash
+  --jq '[.[] | select(.entity_id | test("binary_sensor[.]satel"))]'
+  ```
+- **Never use `\.` inside `test("...")`** — it will not survive the shell + jq round-trip.
+
+If `startswith("binary_sensor.satel")` returns `[]`, the integration likely names entities by friendly label (e.g. `binary_sensor.lazienka`), not with a `satel_` prefix — list `binary_sensor.*` first and inspect.
+
 ### Schema discovery (when unsure what fields exist)
 
 If an endpoint isn't in the table above or you're not sure what fields a row has, peek at one element instead of dumping the whole list:
